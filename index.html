@@ -1,0 +1,1842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reconcile Medications</title>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Open Sans', sans-serif;
+      background: #374e55;
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+
+    /* ── Modal ── */
+    .modal {
+      background: white; border-radius: 4px; width: 860px;
+      box-shadow: 0 0 1px 0 rgba(9,30,66,0.96), 0 8px 24px 0 rgba(9,30,66,0.4), 0 8px 48px 0 rgba(9,30,66,0.24);
+      display: flex; flex-direction: column; overflow: hidden; max-height: 88vh;
+    }
+
+    /* ── Dialog header ── */
+    .modal-header {
+      background: #f0f3f4; border-bottom: 1px solid #e4eaec;
+      padding: 12px 16px; display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+    }
+    .modal-title { flex: 1; font-size: 16px; font-weight: 600; color: #142125; line-height: 1.4; }
+    .btn-doc-med {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 12px; font-weight: 600; color: #374e55;
+      background: none; border: none; cursor: pointer; padding: 4px 6px; border-radius: 4px;
+    }
+    .btn-doc-med:hover { background: rgba(0,0,0,0.07); }
+    .btn-close {
+      width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+      background: none; border: none; cursor: pointer; border-radius: 4px; color: #374e55;
+    }
+    .btn-close:hover { background: rgba(0,0,0,0.07); }
+
+    /* ── Right panel header ── */
+    .right-panel-hd {
+      padding: 10px 14px 9px;
+      border-bottom: 0.5px solid #cdd6db;
+      flex-shrink: 0;
+    }
+
+    /* ── Two-panel area ── */
+    .modal-panels {
+      display: flex; flex: 1; overflow: hidden; min-height: 0; height: 560px;
+    }
+
+    /* ══════════════════════════════════════
+       LEFT SIDEBAR
+    ══════════════════════════════════════ */
+    .sidebar {
+      width: 300px; flex-shrink: 0;
+      display: flex; flex-direction: column;
+      border-right: 1px solid #dde4e7;
+      background: #EEF5FB; /* pale blue bg — cards float against it */
+      overflow: hidden;
+    }
+
+    /* Sidebar header (Change 6) */
+    .sidebar-hd {
+      padding: 10px 14px 9px;
+      border-bottom: 0.5px solid #cdd6db;
+      flex-shrink: 0;
+    }
+    .sidebar-title-row { display: flex; align-items: center; gap: 7px; margin-bottom: 3px; min-height: 19px; }
+    .sidebar-title { font-size: 13px; font-weight: 600; color: #142125; }
+    .nr-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 19px; height: 19px; padding: 0 5px;
+      border-radius: 100px; background: #185FA5; /* blue, not amber (Change 6) */
+      color: white; font-size: 11px; font-weight: 700; line-height: 1;
+      transition: background 0.2s;
+    }
+    .nr-badge.all-done { background: #3B6D11; }
+    .sidebar-subtitle { font-size: 11px; color: rgba(0,24,38,0.45); }
+
+    .sidebar-list { flex: 1; overflow-y: auto; padding-bottom: 8px; }
+
+    /* Section cards (Change 2) */
+    .sc-card {
+      margin: 8px 8px 0;
+      border: 0.5px solid #cdd6db;
+      border-radius: 6px;
+      overflow: hidden;
+      background: white;
+    }
+    .sc-card-auto { opacity: 0.7; }
+    .sc-card-alert { border-color: #EF9F27; }
+    .sc-card-alert .sc-card-hd { background: #FAEEDA; border-bottom-color: #EF9F27; }
+    .badge-fill { background: #e4eaec; color: rgba(0,24,38,0.58); }
+    .sc-card-hd {
+      display: flex; align-items: center; justify-content: space-between;
+      background: #f0f3f4;
+      border-bottom: 0.5px solid #cdd6db;
+      padding: 5px 10px;
+    }
+    .sc-card-label {
+      font-size: 10px; font-weight: 500; text-transform: uppercase;
+      letter-spacing: 0.05em; color: rgba(0,24,38,0.45);
+    }
+    .sc-card-count { font-size: 10px; color: rgba(0,24,38,0.38); }
+    .sc-bulk-btn {
+      font-size: 10px; font-weight: 500; color: rgba(0,24,38,0.45);
+      background: none; border: none;
+      border-radius: 3px; padding: 2px 6px; margin-left: 8px;
+      cursor: pointer; font-family: inherit; text-decoration: none;
+      letter-spacing: 0; line-height: 1.4;
+    }
+    .sc-bulk-btn:hover { color: rgba(0,24,38,0.7); background: rgba(0,24,38,0.04); }
+
+    /* Sidebar items (Change 3) */
+    .sidebar-item {
+      padding: 8px 10px 8px 9px;
+      cursor: pointer;
+      border-left: 3px solid transparent;
+      background: white;
+      transition: background 0.1s;
+    }
+    .sidebar-item:hover { background: #f5f8fb; }
+    .sidebar-item.active { border-left-color: #185FA5; } /* no bg change — border is the signal */
+    .sidebar-item.resolved { opacity: 0.6; }
+    .sidebar-item.resolved:hover { opacity: 0.85; }
+
+    .sidebar-item-name-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 6px; margin-bottom: 2px;
+    }
+    .sidebar-item-name {
+      font-size: 12px; font-weight: 600; color: #142125;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+    }
+
+    .type-badge {
+      display: inline-flex; align-items: center;
+      padding: 1px 5px; border-radius: 2px;
+      font-size: 9px; font-weight: 700; white-space: nowrap; flex-shrink: 0; line-height: 1.5;
+    }
+    .tb-lnt   { background: #FAC775; color: #633806; }
+    .tb-dup   { background: #dbebff; color: #07479d; }
+    .tb-auto  { background: #D3D1C7; color: #444441; }
+
+    .sidebar-item-meta {
+      font-size: 11px; color: rgba(0,24,38,0.45);
+      margin-bottom: 2px; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap;
+    }
+    /* Status line: only shown for resolved items (Change 6) */
+    .sidebar-item-status { font-size: 11px; display: flex; align-items: center; gap: 4px; }
+    .s-pos  { color: #15803d; }
+    .s-neg  { color: rgba(0,24,38,0.40); }
+    .s-auto { color: #185FA5; font-size: 11px; }
+
+    /* "Reviewing now" label (Change 3) */
+    .si-reviewing-now {
+      font-size: 10px; font-weight: 500; color: #185FA5;
+      margin-top: 4px; margin-bottom: 4px;
+    }
+
+    /* Sidebar inline detail */
+    .sidebar-item-detail {
+      display: none; margin-top: 4px; padding-top: 10px;
+      border-top: 1px solid #e8eef2;
+    }
+    .sidebar-item-detail.open { display: block; }
+
+    .si-annotation { font-size: 11px; font-style: italic; color: #253a40; line-height: 1.5; margin-bottom: 4px; }
+    .si-source { font-size: 11px; color: rgba(0,24,38,0.50); line-height: 1.5; margin-bottom: 8px; }
+    .si-callout {
+      background: #fef3c7; border-left: 3px solid #f59e0b;
+      padding: 5px 8px; border-radius: 0 3px 3px 0;
+      font-size: 11px; color: #633806; margin-bottom: 8px; line-height: 1.4;
+    }
+    .si-dup-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 8px; }
+    .si-dup-card { background: #f0f3f4; border-radius: 3px; padding: 6px 8px; }
+    .si-dup-card-name { font-size: 11px; font-weight: 600; color: #142125; margin-bottom: 2px; }
+    .si-dup-card-meta { font-size: 10px; color: rgba(0,24,38,0.45); line-height: 1.4; }
+    .si-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .si-btn-primary {
+      background: #0394ce; color: white; border: none; border-radius: 4px;
+      font-size: 11px; font-weight: 600; font-family: 'Open Sans', sans-serif;
+      height: 26px; padding: 0 10px; cursor: pointer; white-space: nowrap;
+    }
+    .si-btn-primary:hover { background: #0280b4; }
+    .si-btn-danger {
+      background: #0394ce; color: white; border: none; border-radius: 4px;
+      font-size: 11px; font-weight: 600; font-family: 'Open Sans', sans-serif;
+      height: 26px; padding: 0 10px; cursor: pointer; white-space: nowrap;
+    }
+    .si-btn-danger:hover { background: #0280b4; }
+    .si-btn-secondary {
+      background: #e4eaec; color: #253a40; border: none; border-radius: 4px;
+      font-size: 11px; font-weight: 600; font-family: 'Open Sans', sans-serif;
+      height: 26px; padding: 0 10px; cursor: pointer; white-space: nowrap;
+    }
+    .si-btn-secondary:hover { background: #d4dde0; }
+    .si-resolved { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
+    .si-res-pos { font-size: 12px; font-weight: 600; color: #15803d; }
+    .si-res-neg { font-size: 12px; font-weight: 600; color: rgba(0,24,38,0.40); }
+    .si-btn-undo {
+      background: none; border: none; color: #185FA5;
+      font-size: 11px; font-family: 'Open Sans', sans-serif;
+      cursor: pointer; padding: 0; text-decoration: underline;
+    }
+
+    /* Progress footer (Change 7) */
+    .sidebar-ft {
+      padding: 10px 14px;
+      border-top: 0.5px solid #cdd6db;
+      background: #f0f3f4;
+      flex-shrink: 0;
+    }
+    .sidebar-progress-label { font-size: 11px; color: rgba(0,24,38,0.45); margin-bottom: 6px; }
+    .progress-track { height: 4px; background: #dde4e7; border-radius: 2px; overflow: hidden; }
+    .progress-fill {
+      height: 100%; background: #15803d; border-radius: 2px;
+      width: 0%; transition: width 0.3s ease;
+    }
+
+    /* ══════════════════════════════════════
+       RIGHT PANEL
+    ══════════════════════════════════════ */
+    .right-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+
+    /* All-done banner */
+    .all-done-banner {
+      display: none; align-items: center; gap: 8px;
+      background: #EAF3DE; border-bottom: 1px solid #b8d89a;
+      padding: 0 16px; height: 36px;
+      font-size: 12px; color: #27500A; font-weight: 600; flex-shrink: 0;
+    }
+    .all-done-banner.visible { display: flex; }
+
+    /* ── Modal body (med list) ── */
+    .modal-body { flex: 1; overflow-y: auto; min-height: 0; }
+
+    /* ── Med rows ── */
+    .med-card {
+      border-bottom: 1px solid #e4eaec;
+      background: white;
+      border-left: 3px solid transparent; /* reserve space; colored on reviewing */
+    }
+    /* Active row highlight (Change 4) */
+    .med-card.reviewing {
+      background: #EEF5FB;
+      border-left-color: #185FA5;
+    }
+    /* Ghost rows: pending fills not yet on list */
+    .med-card.ghost-row { opacity: 0.75; }
+    .med-card.ghost-row.reviewing { opacity: 1; }
+    .med-card-content { display: flex; align-items: flex-start; gap: 16px; padding: 4px; }
+
+    .chevron-wrap {
+      width: 20px; height: 23px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; padding-top: 3px;
+    }
+    .chevron {
+      width: 0; height: 0;
+      border-left: 5px solid transparent; border-right: 5px solid transparent;
+      border-top: 6px solid #657980;
+      transition: transform 0.15s; transform: rotate(-90deg);
+    }
+    .chevron.open { transform: rotate(0deg); }
+
+    .date-col {
+      width: 59px; flex-shrink: 0; font-size: 14px; color: #253a40;
+      text-align: right; padding-top: 2px; line-height: 1.6;
+    }
+    .med-info { flex: 1; min-width: 0; }
+    .med-name {
+      font-size: 14px; font-weight: 600; color: #142125; line-height: 1.4;
+      display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+    }
+    .med-sig  { font-size: 12px; color: #253a40; line-height: 1.6; }
+    .med-annotation { font-size: 11px; font-style: italic; color: rgba(0,24,38,0.50); line-height: 1.5; margin-top: 1px; }
+    .med-adherence { display: flex; align-items: center; gap: 2px; margin-top: 1px; }
+    .med-adherence span { font-size: 12px; font-style: italic; color: rgba(0,24,38,0.58); line-height: 1.6; }
+    .med-ai-insight {
+      font-size: 12px; font-style: italic; line-height: 1.6; margin-top: 1px;
+      background: linear-gradient(174deg, #59a0f8 2%, #0a59c2 91%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 2px;
+      padding: 2px 3px; border-radius: 2px;
+      font-size: 10px; font-weight: 600; line-height: 1; white-space: nowrap;
+    }
+    .badge-info    { background: #dbebff; color: #07479d; }
+    .badge-neutral { background: #e4eaec; color: rgba(0,24,38,0.58); }
+    .badge-pending { background: #FEF3C7; color: #92400E; }
+
+    .cs-icon { width: 18px; height: 18px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; }
+    .paper-icon { width: 16px; height: 16px; flex-shrink: 0; }
+
+    /* Hover */
+    .med-card:hover .med-card-content { background: #f0f3f4; border-radius: 4px; }
+    .med-card.reviewing:hover .med-card-content { background: #e4eef7; border-radius: 4px; }
+    .row-actions {
+      display: flex; align-items: flex-start; gap: 6px;
+      padding-top: 2px; flex-shrink: 0; visibility: hidden;
+    }
+    .med-card:hover .row-actions { visibility: visible; }
+    .add-note-hint { display: none; align-items: center; gap: 3px; margin-top: 1px; }
+    .med-card:hover .add-note-hint { display: flex; }
+    .add-note-hint span { font-size: 12px; font-style: italic; color: rgba(0,24,38,0.40); }
+
+    .btn-sm-default {
+      background: #e4eaec; color: #253a40;
+      font-size: 12px; font-weight: 600; font-family: 'Open Sans', sans-serif;
+      border: none; border-radius: 4px; height: 24px; padding: 0 8px;
+      cursor: pointer; white-space: nowrap;
+    }
+    .btn-sm-default:hover { background: #d4dde0; }
+
+    /* D/C state */
+    .med-card.dc .med-card-content { background: #f9fafb !important; border-radius: 4px; }
+    .med-card.dc .row-actions { visibility: visible; }
+    .med-card.dc .dc-btn { background: #0394ce !important; color: white !important; }
+    .med-card.dc .dc-btn::before { content: "✓ "; }
+    .med-card.dc .med-name { text-decoration: line-through; color: rgba(0,24,38,0.58) !important; font-weight: 400 !important; }
+    .med-card.dc .med-name .badge { display: none; }
+    .med-card.dc .med-name span[style] { color: rgba(0,24,38,0.58) !important; }
+    .med-card.dc .med-sig { text-decoration: line-through; color: rgba(0,24,38,0.58); }
+    .med-card.dc .date-col { color: rgba(0,24,38,0.58); }
+    .med-card.dc .med-adherence { display: none; }
+    .med-card.dc .med-ai-insight { display: none; }
+    .med-card.dc .add-note-hint { display: none !important; }
+
+    .dc-options { display: none; padding: 2px 4px 8px 43px; flex-direction: column; gap: 4px; }
+    .med-card.dc .dc-options { display: flex; }
+
+    .seg-radio {
+      background: #e4eaec; border-radius: 100px;
+      display: inline-flex; height: 24px; align-items: center; flex-shrink: 0;
+    }
+    .seg-radio-btn {
+      padding: 3px 10px; border-radius: 100px; height: 24px;
+      display: flex; align-items: center; font-size: 12px; color: #142125;
+      cursor: pointer; white-space: nowrap; border: 1px solid transparent;
+      background: none; font-family: 'Open Sans', sans-serif; line-height: 1;
+    }
+    .seg-radio-btn.selected { background: white; border-color: #296bbc; color: #296bbc; }
+
+    .dc-divider { height: 1px; background: #e4eaec; margin: 2px 0; }
+    .dc-checkbox-row { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; color: #142125; }
+    .dc-checkbox-row input { width: 16px; height: 16px; cursor: pointer; accent-color: #0394ce; }
+
+    /* Auto-merged badge */
+    .auto-merged-badge { cursor: pointer; user-select: none; transition: background 0.1s; }
+    .auto-merged-badge .merge-normal { display: inline-flex; align-items: center; gap: 2px; }
+    .auto-merged-badge .merge-hover  { display: none; align-items: center; gap: 2px; }
+    .auto-merged-badge:hover { background: #bcd0e9; }
+    .auto-merged-badge:hover .merge-normal { display: none; }
+    .auto-merged-badge:hover .merge-hover  { display: inline-flex; }
+
+    /* Nested rows */
+    .nested-rows { display: none; flex-direction: column; gap: 4px; padding: 4px; }
+    .nested-rows.open { display: flex; }
+    .nested-timeline-label { display: flex; align-items: center; height: 18px; padding: 0 40px; position: relative; }
+    .nested-timeline-label span {
+      font-size: 11px; color: rgba(0,24,38,0.58);
+    }
+    .nested-row { display: flex; align-items: flex-start; gap: 16px; padding: 0 4px; }
+    .nested-date { width: 59px; flex-shrink: 0; font-size: 12px; color: #253a40; text-align: right; padding-top: 2px; line-height: 1.6; }
+    .nested-med { flex: 1; min-width: 0; }
+    .nested-med-name { font-size: 12px; color: #142125; line-height: 1.4; }
+    .nested-med-name strong { font-weight: 600; }
+    .nested-med-sig { font-size: 12px; color: #253a40; line-height: 1.4; }
+
+    /* Merge banner */
+    .merge-banner {
+      display: none; align-items: center; gap: 10px;
+      background: #f5f9ff; padding: 5px 16px;
+      border-bottom: 1px solid #dbebff; position: sticky; top: 0; z-index: 2;
+    }
+    .merge-banner-prompt { font-size: 12px; color: #253a40; }
+    .merge-banner-actions { display: none; align-items: center; gap: 10px; }
+    .btn-merge-confirm {
+      background: #0394ce; color: white; border: none; border-radius: 100px;
+      font-size: 12px; font-weight: 600; font-family: 'Open Sans', sans-serif;
+      padding: 0 10px; height: 24px; cursor: pointer;
+    }
+    .btn-merge-confirm:hover { background: #0280b4; }
+    .btn-cancel-merge {
+      background: none; border: none; font-size: 12px; color: #253a40;
+      font-family: 'Open Sans', sans-serif; cursor: pointer; padding: 0;
+    }
+    .btn-cancel-merge:hover { text-decoration: underline; }
+
+    /* Merge mode */
+    .modal.merge-mode .merge-banner { display: flex; }
+    .modal.merge-mode .row-actions { visibility: hidden !important; }
+    .modal.merge-mode .med-card.dc .row-actions { visibility: hidden !important; }
+    .merge-cb { display: none; width: 15px; height: 15px; cursor: pointer; accent-color: #0394ce; flex-shrink: 0; margin-top: 1px; }
+    .modal.merge-mode .chevron { display: none; }
+    .modal.merge-mode .merge-cb { display: block; }
+    .modal.merge-mode #footer-primary-btn { background: #e4eaec !important; color: #253a40 !important; }
+    .modal.merge-mode #footer-primary-btn:hover { background: #d4dde0 !important; }
+
+    /* Actions dropdown */
+    #actions-dropdown {
+      display: none; position: fixed; background: white; border-radius: 4px;
+      box-shadow: 0 2px 8px 0 rgba(9,30,66,0.24), 0 0 1px 0 rgba(9,30,66,0.31);
+      padding: 4px 0; z-index: 200; min-width: 172px;
+    }
+    #actions-dropdown.open { display: block; }
+    .dropdown-item {
+      display: flex; align-items: center; padding: 7px 12px;
+      font-size: 14px; color: #142125; cursor: pointer;
+      white-space: nowrap; font-family: 'Open Sans', sans-serif;
+    }
+    .dropdown-item:hover { background: #f0f3f4; }
+
+    /* ── Footer ── */
+    .modal-footer {
+      border-top: 1px solid #e4eaec; padding: 12px 16px;
+      display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+    }
+    .footer-status { font-size: 12px; color: rgba(0,24,38,0.45); }
+    .footer-status.all-done { color: #27500A; font-weight: 600; }
+    .footer-spacer { flex: 1; }
+    .btn-primary {
+      background: #0394ce; color: white; font-size: 14px; font-weight: 600;
+      font-family: 'Open Sans', sans-serif; border: none; border-radius: 4px;
+      height: 32px; padding: 0 12px; cursor: pointer; white-space: nowrap;
+    }
+    .btn-primary:hover { background: #0280b4; }
+    .btn-primary:disabled { background: #15803d; cursor: default; }
+    .btn-default {
+      background: #e4eaec; color: #253a40; font-size: 14px; font-weight: 600;
+      font-family: 'Open Sans', sans-serif; border: none; border-radius: 4px;
+      height: 32px; padding: 0 12px; cursor: pointer; white-space: nowrap;
+    }
+    .btn-default:hover { background: #d4dde0; }
+  </style>
+</head>
+<body>
+
+<div class="modal" id="main-modal">
+
+  <!-- Dialog header -->
+  <div class="modal-header">
+    <span class="modal-title">Reconcile Medications</span>
+    <button class="btn-doc-med">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+        <line x1="7" y1="2" x2="7" y2="12"/><line x1="2" y1="7" x2="12" y2="7"/>
+      </svg>
+      Document Med
+    </button>
+    <button class="btn-close" onclick="document.getElementById('main-modal').style.display='none'">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+        <line x1="2" y1="2" x2="12" y2="12"/><line x1="12" y1="2" x2="2" y2="12"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Two-panel area -->
+  <div class="modal-panels">
+
+    <!-- ══ LEFT SIDEBAR ══ -->
+    <div class="sidebar">
+
+      <div class="sidebar-hd">
+        <div class="sidebar-title-row">
+          <span class="sidebar-title">Needs review</span>
+          <span class="nr-badge" id="nr-badge">3</span>
+        </div>
+        <div class="sidebar-subtitle">Since last reconciliation · 04/15/20</div>
+      </div>
+
+      <div class="sidebar-list" id="sidebar-list">
+
+        <!-- Section card: New pharmacy fills -->
+        <div class="sc-card">
+          <div class="sc-card-hd">
+            <span class="sc-card-label">Not Previously in Chart</span>
+            <button class="sc-bulk-btn" id="bulk-btn-fill" onclick="bulkResolveSection('fill','added')">Sign Off All</button>
+          </div>
+          <div class="sidebar-item active" id="si-fill-lisinopril" onclick="selectItem('fill-lisinopril')">
+            <div class="sidebar-item-name-row">
+              <div class="sidebar-item-name">Lisinopril 10 mg</div>
+            </div>
+            <div class="sidebar-item-meta">CVS Pharmacy · 05/01/20</div>
+            <div class="sidebar-item-status" id="si-status-fill-lisinopril"></div>
+            <div class="sidebar-item-detail" id="si-detail-fill-lisinopril"></div>
+          </div>
+          <div class="sidebar-item" id="si-fill-metformin" onclick="selectItem('fill-metformin')">
+            <div class="sidebar-item-name-row">
+              <div class="sidebar-item-name">Metformin ER 500 mg</div>
+            </div>
+            <div class="sidebar-item-meta">Walgreens · 04/28/20</div>
+            <div class="sidebar-item-status" id="si-status-fill-metformin"></div>
+            <div class="sidebar-item-detail" id="si-detail-fill-metformin"></div>
+          </div>
+        </div>
+
+        <!-- Section card: Pharmacy fills (existing meds) -->
+        <div class="sc-card" id="sc-card-fill-existing">
+          <div class="sc-card-hd">
+            <span class="sc-card-label">Pharmacy fills</span>
+            <button class="sc-bulk-btn" id="bulk-btn-fill-existing" onclick="bulkResolveSection('fill-existing','signed-off')">Sign Off All</button>
+          </div>
+          <div class="sidebar-item" id="si-fill-existing-aspirin" onclick="selectItem('fill-existing-aspirin')">
+            <div class="sidebar-item-name-row">
+              <div class="sidebar-item-name">Aspirin 81 mg Tab</div>
+            </div>
+            <div class="sidebar-item-meta">CVS Pharmacy · 05/02/20</div>
+            <div class="sidebar-item-status" id="si-status-fill-existing-aspirin"></div>
+            <div class="sidebar-item-detail" id="si-detail-fill-existing-aspirin"></div>
+          </div>
+          <div class="sidebar-item" id="si-fill-existing-levothyroxine" onclick="selectItem('fill-existing-levothyroxine')">
+            <div class="sidebar-item-name-row">
+              <div class="sidebar-item-name">Levothyroxine 50 mcg Tab</div>
+            </div>
+            <div class="sidebar-item-meta">Walgreens · 05/05/20</div>
+            <div class="sidebar-item-status" id="si-status-fill-existing-levothyroxine"></div>
+            <div class="sidebar-item-detail" id="si-detail-fill-existing-levothyroxine"></div>
+          </div>
+        </div>
+
+        <!-- Section card: Likely not taking -->
+        <div class="sc-card">
+          <div class="sc-card-hd">
+            <span class="sc-card-label">Likely not taking</span>
+            <button class="sc-bulk-btn" id="bulk-btn-lnt" onclick="bulkResolveSection('likely-not-taking','discontinued')">Discontinue All</button>
+          </div>
+          <div class="sidebar-item" id="si-lnt-amoxicillin" onclick="selectItem('lnt-amoxicillin')">
+            <div class="sidebar-item-name-row">
+              <div class="sidebar-item-name">Amoxicillin 250 mg</div>
+            </div>
+            <div class="sidebar-item-meta">No refill since 05/24/20</div>
+            <div class="sidebar-item-status" id="si-status-lnt-amoxicillin"></div>
+            <div class="sidebar-item-detail" id="si-detail-lnt-amoxicillin"></div>
+          </div>
+          <div class="sidebar-item" id="si-lnt-sertraline" onclick="selectItem('lnt-sertraline')">
+            <div class="sidebar-item-name-row">
+              <div class="sidebar-item-name">Sertraline 50 mg</div>
+            </div>
+            <div class="sidebar-item-meta">No refill since 03/15/20</div>
+            <div class="sidebar-item-status" id="si-status-lnt-sertraline"></div>
+            <div class="sidebar-item-detail" id="si-detail-lnt-sertraline"></div>
+          </div>
+        </div>
+
+        <!-- Section card: Possible duplicates -->
+        <div class="sc-card">
+          <div class="sc-card-hd">
+            <span class="sc-card-label">Possible duplicates</span>
+            <button class="sc-bulk-btn" id="bulk-btn-dup" onclick="bulkResolveSection('duplicate','merged')">Merge All</button>
+          </div>
+          <div class="sidebar-item" id="si-dup-famotidine" onclick="selectItem('dup-famotidine')">
+            <div class="sidebar-item-name-row">
+              <div class="sidebar-item-name">Famotidine · Pepcid</div>
+            </div>
+            <div class="sidebar-item-meta">Redundant entries</div>
+            <div class="sidebar-item-status" id="si-status-dup-famotidine"></div>
+            <div class="sidebar-item-detail" id="si-detail-dup-famotidine"></div>
+          </div>
+          <div class="sidebar-item" id="si-dup-omeprazole" onclick="selectItem('dup-omeprazole')">
+            <div class="sidebar-item-name-row">
+              <div class="sidebar-item-name">Omeprazole · Prilosec</div>
+            </div>
+            <div class="sidebar-item-meta">Redundant entries</div>
+            <div class="sidebar-item-status" id="si-status-dup-omeprazole"></div>
+            <div class="sidebar-item-detail" id="si-detail-dup-omeprazole"></div>
+          </div>
+        </div>
+
+        <!-- Section card: Auto-resolved (de-emphasized) -->
+        <div class="sc-card sc-card-auto">
+          <div class="sc-card-hd">
+            <span class="sc-card-label">Auto-resolved</span>
+                      </div>
+          <div class="sidebar-item resolved" id="si-auto-atorvastatin" onclick="selectItem('auto-atorvastatin')">
+            <div class="sidebar-item-name-row">
+              <div class="sidebar-item-name">Atorvastatin 20 mg</div>
+            </div>
+            <div class="sidebar-item-meta">Identical med, dose, sig</div>
+            <div class="sidebar-item-status" id="si-status-auto-atorvastatin">
+              <span class="s-auto">✓ Merged</span>
+            </div>
+            <div class="sidebar-item-detail" id="si-detail-auto-atorvastatin"></div>
+          </div>
+          <div class="sidebar-item resolved" id="si-auto-metoprolol" onclick="selectItem('auto-metoprolol')">
+            <div class="sidebar-item-name-row">
+              <div class="sidebar-item-name">Metoprolol Succ 25 mg</div>
+            </div>
+            <div class="sidebar-item-meta">Identical med, dose, sig</div>
+            <div class="sidebar-item-status" id="si-status-auto-metoprolol">
+              <span class="s-auto">✓ Merged</span>
+            </div>
+            <div class="sidebar-item-detail" id="si-detail-auto-metoprolol"></div>
+          </div>
+        </div>
+
+      </div><!-- /sidebar-list -->
+
+      <!-- Progress footer (Change 7) -->
+      <div class="sidebar-ft">
+        <div class="sidebar-progress-label" id="progress-label">0 of 3 reviewed</div>
+        <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+      </div>
+
+    </div><!-- /sidebar -->
+
+    <!-- ══ RIGHT PANEL ══ -->
+    <div class="right-panel">
+
+      <div class="right-panel-hd">
+        <div class="sidebar-title-row">
+          <span class="sidebar-title">Active Medications</span>
+        </div>
+        <div class="sidebar-subtitle">Includes pharmacy downloads pending review</div>
+      </div>
+
+      <!-- All-done banner -->
+      <div class="all-done-banner" id="all-done-banner">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l4 4 6-6" stroke="#27500A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        All items reviewed — confirm the medication list below to update the clinical profile.
+      </div>
+
+      <!-- Medication list -->
+      <div class="modal-body">
+
+        <!-- Merge mode banner -->
+        <div class="merge-banner">
+          <div class="merge-banner-prompt">Choose med(s) to merge with</div>
+          <div class="merge-banner-actions">
+            <button class="btn-merge-confirm" id="merge-confirm-btn" onclick="exitMergeMode()">Merge 2 Items</button>
+            <button class="btn-cancel-merge" onclick="exitMergeMode()">Cancel Merge</button>
+          </div>
+        </div>
+
+        <!-- ── Row: Albuterol ── -->
+        <div class="med-card" id="card-albuterol">
+          <div class="med-card-content">
+            <div class="chevron-wrap" onclick="toggleRow('albuterol')">
+              <div class="chevron" id="chev-albuterol"></div>
+              <input type="checkbox" class="merge-cb" onclick="event.stopPropagation()" onchange="updateMergeBanner()">
+            </div>
+            <div class="date-col">05/24/20</div>
+            <div class="med-info">
+              <div class="med-name">Albuterol 90 mcg Inhaler</div>
+              <div class="med-sig">One to two inhalations as needed</div>
+              <div class="med-adherence">
+                <svg class="paper-icon" viewBox="0 0 16 16" fill="none"><path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="#8398a0" stroke-width="1.1" stroke-linejoin="round"/><path d="M10 2v4h4" stroke="#8398a0" stroke-width="1.1" stroke-linejoin="round"/><path d="M5 8h6M5 10.5h4" stroke="#8398a0" stroke-width="1" stroke-linecap="round"/></svg>
+                <span>pt often needs 2+ inhalations</span>
+              </div>
+            </div>
+            <div class="row-actions">
+              <button class="btn-sm-default dc-btn" onclick="toggleDC('albuterol')">D/C</button>
+              <button class="btn-sm-default" onclick="openActionsMenu(event,'albuterol')">Actions</button>
+            </div>
+          </div>
+          <div class="dc-options">
+            <div style="font-size:11px;color:rgba(0,24,38,0.58);margin-bottom:3px;">Reason for D/C</div>
+            <div class="seg-radio">
+              <button class="seg-radio-btn selected" onclick="selectDCReason(this)">Patient D/C</button>
+              <button class="seg-radio-btn" onclick="selectDCReason(this)">Complete</button>
+              <button class="seg-radio-btn" onclick="selectDCReason(this)">Internal D/C</button>
+              <button class="seg-radio-btn" onclick="selectDCReason(this)">External D/C</button>
+            </div>
+            <div class="dc-divider"></div>
+            <label class="dc-checkbox-row"><input type="checkbox"> Send cancellation request</label>
+          </div>
+          <div class="nested-rows" id="nested-albuterol"></div>
+        </div>
+
+        <!-- ── Row 2: Amoxicillin ── -->
+        <div class="med-card" id="card-amoxicillin">
+          <div class="med-card-content">
+            <div class="chevron-wrap" onclick="toggleRow('amoxicillin')">
+              <div class="chevron" id="chev-amoxicillin"></div>
+              <input type="checkbox" class="merge-cb" onclick="event.stopPropagation()" onchange="updateMergeBanner()">
+            </div>
+            <div class="date-col">05/24/20</div>
+            <div class="med-info">
+              <div class="med-name">
+                Amoxicillin 250 mg Cap
+                <span class="badge badge-info" id="badge-lnt-amoxicillin">Likely Not Taking</span>
+              </div>
+              <div class="med-sig">Take one tablet by mouth every 8 hours until complete</div>
+              <div class="add-note-hint">
+                <svg class="paper-icon" viewBox="0 0 16 16" fill="none"><path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="#8398a0" stroke-width="1.1" stroke-linejoin="round"/><path d="M10 2v4h4" stroke="#8398a0" stroke-width="1.1" stroke-linejoin="round"/><path d="M5 8h6M5 10.5h4" stroke="#8398a0" stroke-width="1" stroke-linecap="round"/></svg>
+                <span>Add note...</span>
+              </div>
+              <div class="med-ai-insight">Pt has not refilled this med since 05/24/20.</div>
+            </div>
+            <div class="row-actions">
+              <button class="btn-sm-default dc-btn" onclick="toggleDC('amoxicillin')">D/C</button>
+              <button class="btn-sm-default" onclick="openActionsMenu(event,'amoxicillin')">Actions</button>
+            </div>
+          </div>
+          <div class="dc-options">
+            <div style="font-size:11px;color:rgba(0,24,38,0.58);margin-bottom:3px;">Reason for D/C</div>
+            <div class="seg-radio">
+              <button class="seg-radio-btn selected" onclick="selectDCReason(this)">Patient D/C</button>
+              <button class="seg-radio-btn" onclick="selectDCReason(this)">Complete</button>
+              <button class="seg-radio-btn" onclick="selectDCReason(this)">Internal D/C</button>
+              <button class="seg-radio-btn" onclick="selectDCReason(this)">External D/C</button>
+            </div>
+            <div class="dc-divider"></div>
+            <label class="dc-checkbox-row"><input type="checkbox"> Send cancellation request</label>
+          </div>
+          <div class="nested-rows" id="nested-amoxicillin"></div>
+        </div>
+
+        <!-- ── Row: Aspirin ── -->
+        <div class="med-card" id="card-aspirin">
+          <div class="med-card-content">
+            <div class="chevron-wrap" onclick="toggleRow('aspirin')">
+              <div class="chevron" id="chev-aspirin"></div>
+              <input type="checkbox" class="merge-cb" onclick="event.stopPropagation()" onchange="updateMergeBanner()">
+            </div>
+            <div class="date-col">04/15/20</div>
+            <div class="med-info">
+              <div class="med-name">Aspirin 81 mg Tab</div>
+              <div class="med-sig">Take one tablet by mouth once daily</div>
+              <div class="med-annotation" id="ann-fill-existing-aspirin" style="display:none;"></div>
+            </div>
+            <div class="row-actions">
+              <button class="btn-sm-default dc-btn" onclick="toggleDC('aspirin')">D/C</button>
+              <button class="btn-sm-default" onclick="openActionsMenu(event,'aspirin')">Actions</button>
+            </div>
+          </div>
+          <div class="dc-options">
+            <div style="font-size:11px;color:rgba(0,24,38,0.58);margin-bottom:3px;">Reason for D/C</div>
+            <div class="seg-radio">
+              <button class="seg-radio-btn selected" onclick="selectDCReason(this)">Patient D/C</button>
+              <button class="seg-radio-btn" onclick="selectDCReason(this)">Complete</button>
+              <button class="seg-radio-btn" onclick="selectDCReason(this)">Internal D/C</button>
+              <button class="seg-radio-btn" onclick="selectDCReason(this)">External D/C</button>
+            </div>
+            <div class="dc-divider"></div>
+            <label class="dc-checkbox-row"><input type="checkbox"> Send cancellation request</label>
+          </div>
+          <div class="nested-rows" id="nested-aspirin">
+            <div class="nested-timeline-label"><span>Fills</span></div>
+            <div class="nested-row" style="background:#FFFBF4;padding-bottom:4px;">
+              <div style="width:20px;flex-shrink:0;opacity:0;"></div>
+              <div class="nested-date">05/02/20</div>
+              <div class="nested-med">
+                <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;"><span class="badge badge-fill">Fill</span><span class="nested-med-name"><strong>Aspirin 81 mg</strong> · 1 tab daily</span><span class="badge badge-pending">Pending Sign Off</span></div>
+                <div class="nested-med-sig" style="color:rgba(0,24,38,0.45);">CVS Pharmacy · Dr. L. Park</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Row: Atorvastatin ── -->
+        <div class="med-card" id="card-atorvastatin">
+          <div class="med-card-content">
+            <div class="chevron-wrap" onclick="toggleRow('atorvastatin')">
+              <div class="chevron open" id="chev-atorvastatin"></div>
+              <input type="checkbox" class="merge-cb" onclick="event.stopPropagation()" onchange="updateMergeBanner()">
+            </div>
+            <div class="date-col">05/24/20</div>
+            <div class="med-info">
+              <div class="med-name">
+                Atorvastatin 20 mg
+                <span class="badge badge-info auto-merged-badge" onclick="unmerge('atorvastatin')">
+                  <span class="merge-normal">Auto Merged</span>
+                  <span class="merge-hover">
+                    Unmerge
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="opacity:0.4;flex-shrink:0;"><line x1="2" y1="2" x2="8" y2="8" stroke="#142125" stroke-width="1.4" stroke-linecap="round"/><line x1="8" y1="2" x2="2" y2="8" stroke="#142125" stroke-width="1.4" stroke-linecap="round"/></svg>
+                  </span>
+                </span>
+              </div>
+              <div class="med-sig">Take one tablet by mouth twice a day</div>
+              <div class="med-adherence">
+                <svg class="paper-icon" viewBox="0 0 16 16" fill="none"><path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="#8398a0" stroke-width="1.1" stroke-linejoin="round"/><path d="M10 2v4h4" stroke="#8398a0" stroke-width="1.1" stroke-linejoin="round"/><path d="M5 8h6M5 10.5h4" stroke="#8398a0" stroke-width="1" stroke-linecap="round"/></svg>
+                <span>pt often forgets this med</span>
+              </div>
+              <div class="med-ai-insight">Rx from 5/24/20 merged with fill data from 5/25/20</div>
+            </div>
+            <div class="row-actions">
+              <button class="btn-sm-default dc-btn" onclick="toggleDC('atorvastatin')">D/C</button>
+              <button class="btn-sm-default" onclick="openActionsMenu(event,'atorvastatin')">Actions</button>
+            </div>
+          </div>
+          <div class="dc-options">
+            <div style="font-size:11px;color:rgba(0,24,38,0.58);margin-bottom:3px;">Reason for D/C</div>
+            <div class="seg-radio">
+              <button class="seg-radio-btn selected" onclick="selectDCReason(this)">Patient D/C</button>
+              <button class="seg-radio-btn" onclick="selectDCReason(this)">Complete</button>
+              <button class="seg-radio-btn" onclick="selectDCReason(this)">Internal D/C</button>
+              <button class="seg-radio-btn" onclick="selectDCReason(this)">External D/C</button>
+            </div>
+            <div class="dc-divider"></div>
+            <label class="dc-checkbox-row"><input type="checkbox"> Send cancellation request</label>
+          </div>
+          <div class="nested-rows open" id="nested-atorvastatin">
+            <div class="nested-timeline-label"><span>Timeline</span></div>
+            <div class="nested-row">
+              <div style="width:20px;flex-shrink:0;opacity:0;"></div>
+              <div class="nested-date">05/25/20</div>
+              <div class="nested-med">
+                <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;"><span class="badge badge-neutral">Doc'd New</span><span class="nested-med-name"><strong>Atorvastatin 20 mg</strong>: Take one</span></div>
+                <div class="nested-med-sig">tablet by mouth once a day</div>
+              </div>
+            </div>
+            <div class="nested-row" style="padding-bottom:4px;">
+              <div style="width:20px;flex-shrink:0;opacity:0;"></div>
+              <div class="nested-date">05/24/20</div>
+              <div class="nested-med">
+                <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;"><span class="badge badge-neutral">New Rx</span><span class="nested-med-name"><strong>Atorvastatin 20 mg</strong>: Take one</span></div>
+                <div class="nested-med-sig">tablet by mouth once a day</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Row: Dextroamphetamine ── -->
+        <div class="med-card" id="card-dextro">
+          <div class="med-card-content">
+            <div class="chevron-wrap" onclick="toggleRow('dextro')">
+              <div class="chevron" id="chev-dextro"></div>
+              <input type="checkbox" class="merge-cb" onclick="event.stopPropagation()" onchange="updateMergeBanner()">
+            </div>
+            <div class="date-col">05/24/20</div>
+            <div class="med-info">
+              <div class="med-name">
+                Dextroamphetamine 10 mg Tab
+                <span style="font-size:14px;font-weight:600;color:#142125;">(Adderall)</span>
+                <span class="cs-icon" title="Controlled substance">
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="1" width="16" height="16" rx="3" stroke="#4a6168" stroke-width="1.3"/><text x="9" y="13" font-size="10" font-weight="600" fill="#4a6168" text-anchor="middle" font-family="Open Sans, sans-serif">C</text></svg>
+                </span>
+              </div>
+              <div class="med-sig">Take one tablet by mouth once a day</div>
+              <div class="add-note-hint">
+                <svg class="paper-icon" viewBox="0 0 16 16" fill="none"><path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="#8398a0" stroke-width="1.1" stroke-linejoin="round"/><path d="M10 2v4h4" stroke="#8398a0" stroke-width="1.1" stroke-linejoin="round"/><path d="M5 8h6M5 10.5h4" stroke="#8398a0" stroke-width="1" stroke-linecap="round"/></svg>
+                <span>Add note...</span>
+              </div>
+            </div>
+            <div class="row-actions">
+              <button class="btn-sm-default dc-btn" onclick="toggleDC('dextro')">D/C</button>
+              <button class="btn-sm-default" onclick="openActionsMenu(event,'dextro')">Actions</button>
+            </div>
+          </div>
+          <div class="dc-options">
+            <div style="font-size:11px;color:rgba(0,24,38,0.58);margin-bottom:3px;">Reason for D/C</div>
+            <div class="seg-radio">
+              <button class="seg-radio-btn selected" onclick="selectDCReason(this)">Patient D/C</button>
+              <button class="seg-radio-btn" onclick="selectDCReason(this)">Complete</button>
+              <button class="seg-radio-btn" onclick="selectDCReason(this)">Internal D/C</button>
+              <button class="seg-radio-btn" onclick="selectDCReason(this)">External D/C</button>
+            </div>
+            <div class="dc-divider"></div>
+            <label class="dc-checkbox-row"><input type="checkbox"> Send cancellation request</label>
+          </div>
+          <div class="nested-rows" id="nested-dextro"></div>
+        </div>
+
+        <!-- ── Row: Famotidine ── -->
+        <div class="med-card" id="card-famotidine">
+          <div class="med-card-content">
+            <div class="chevron-wrap" onclick="toggleRow('famotidine')">
+              <div class="chevron" id="chev-famotidine"></div>
+              <input type="checkbox" class="merge-cb" onclick="event.stopPropagation()" onchange="updateMergeBanner()">
+            </div>
+            <div class="date-col">05/24/20</div>
+            <div class="med-info">
+              <div class="med-name">
+                Famotidine 20 mg Tab
+                <span class="badge" id="badge-dup-famotidine" style="background:#dbebff;color:#07479d;">Likely Duplicate</span>
+              </div>
+              <div class="med-sig">One to two tablets by mouth twice daily</div>
+              <div class="add-note-hint">
+                <svg class="paper-icon" viewBox="0 0 16 16" fill="none"><path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="#8398a0" stroke-width="1.1" stroke-linejoin="round"/><path d="M10 2v4h4" stroke="#8398a0" stroke-width="1.1" stroke-linejoin="round"/><path d="M5 8h6M5 10.5h4" stroke="#8398a0" stroke-width="1" stroke-linecap="round"/></svg>
+                <span>Add note...</span>
+              </div>
+            </div>
+            <div class="row-actions">
+              <button class="btn-sm-default dc-btn" onclick="toggleDC('famotidine')">D/C</button>
+              <button class="btn-sm-default" onclick="openActionsMenu(event,'famotidine')">Actions</button>
+            </div>
+          </div>
+          <div class="dc-options">
+            <div style="font-size:11px;color:rgba(0,24,38,0.58);margin-bottom:3px;">Reason for D/C</div>
+            <div class="seg-radio">
+              <button class="seg-radio-btn selected" onclick="selectDCReason(this)">Patient D/C</button>
+              <button class="seg-radio-btn" onclick="selectDCReason(this)">Complete</button>
+              <button class="seg-radio-btn" onclick="selectDCReason(this)">Internal D/C</button>
+              <button class="seg-radio-btn" onclick="selectDCReason(this)">External D/C</button>
+            </div>
+            <div class="dc-divider"></div>
+            <label class="dc-checkbox-row"><input type="checkbox"> Send cancellation request</label>
+          </div>
+          <div class="nested-rows" id="nested-famotidine"></div>
+        </div>
+
+        <!-- ── Row: Levothyroxine ── -->
+        <div class="med-card" id="card-levothyroxine">
+          <div class="med-card-content">
+            <div class="chevron-wrap" onclick="toggleRow('levothyroxine')">
+              <div class="chevron open" id="chev-levothyroxine"></div>
+              <input type="checkbox" class="merge-cb" onclick="event.stopPropagation()" onchange="updateMergeBanner()">
+            </div>
+            <div class="date-col">03/10/20</div>
+            <div class="med-info">
+              <div class="med-name">Levothyroxine 50 mcg Tab</div>
+              <div class="med-sig">Take one tablet by mouth once daily in the morning</div>
+              <div class="med-annotation" id="ann-fill-existing-levothyroxine">Filled at 75 mcg on 05/05/20 — review needed</div>
+            </div>
+            <div class="row-actions">
+              <button class="btn-sm-default dc-btn" onclick="toggleDC('levothyroxine')">D/C</button>
+              <button class="btn-sm-default" onclick="openActionsMenu(event,'levothyroxine')">Actions</button>
+            </div>
+          </div>
+          <div class="dc-options">
+            <div style="font-size:11px;color:rgba(0,24,38,0.58);margin-bottom:3px;">Reason for D/C</div>
+            <div class="seg-radio">
+              <button class="seg-radio-btn selected" onclick="selectDCReason(this)">Patient D/C</button>
+              <button class="seg-radio-btn" onclick="selectDCReason(this)">Complete</button>
+              <button class="seg-radio-btn" onclick="selectDCReason(this)">Internal D/C</button>
+              <button class="seg-radio-btn" onclick="selectDCReason(this)">External D/C</button>
+            </div>
+            <div class="dc-divider"></div>
+            <label class="dc-checkbox-row"><input type="checkbox"> Send cancellation request</label>
+          </div>
+          <div class="nested-rows open" id="nested-levothyroxine">
+            <div class="nested-timeline-label"><span>Fills</span></div>
+            <div class="nested-row" style="background:#FFFBF4;padding-bottom:4px;">
+              <div style="width:20px;flex-shrink:0;opacity:0;"></div>
+              <div class="nested-date">05/05/20</div>
+              <div class="nested-med">
+                <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;"><span class="badge badge-fill">Fill</span><span class="nested-med-name"><strong>Levothyroxine 75 mcg</strong> · 1 tab daily (morning)</span><span class="badge badge-pending">Pending Sign Off</span></div>
+                <div class="nested-med-sig" style="color:rgba(0,24,38,0.45);">Walgreens · Dr. T. Nguyen</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ghost row: Lisinopril pending fill -->
+        <div class="med-card ghost-row reviewing" id="card-ghost-lisinopril">
+          <div class="med-card-content">
+            <div class="chevron-wrap" style="visibility:hidden;"><div class="chevron"></div></div>
+            <div class="date-col">05/01/20</div>
+            <div class="med-info">
+              <div class="med-name">Lisinopril 10 mg <span class="badge badge-pending">Pending Sign Off</span></div>
+              <div class="med-sig">Take one tablet by mouth once daily</div>
+              <div class="med-annotation">CVS Pharmacy · Dr. M. Rivera</div>
+            </div>
+            <div class="row-actions" style="visibility:hidden;"></div>
+          </div>
+        </div>
+
+        <!-- Ghost row: Metformin ER pending fill -->
+        <div class="med-card ghost-row" id="card-ghost-metformin">
+          <div class="med-card-content">
+            <div class="chevron-wrap" style="visibility:hidden;"><div class="chevron"></div></div>
+            <div class="date-col">04/28/20</div>
+            <div class="med-info">
+              <div class="med-name">Metformin ER 500 mg <span class="badge badge-pending">Pending Sign Off</span></div>
+              <div class="med-sig">Take one tablet by mouth twice daily with meals</div>
+              <div class="med-annotation">Walgreens · Dr. T. Nguyen</div>
+            </div>
+            <div class="row-actions" style="visibility:hidden;"></div>
+          </div>
+        </div>
+
+        <!-- ── Row: Metoprolol (Auto Merged) ── -->
+        <div class="med-card" id="card-metoprolol">
+          <div class="med-card-content">
+            <div class="chevron-wrap" onclick="toggleRow('metoprolol')">
+              <div class="chevron open" id="chev-metoprolol"></div>
+              <input type="checkbox" class="merge-cb" onclick="event.stopPropagation()" onchange="updateMergeBanner()">
+            </div>
+            <div class="date-col">05/20/20</div>
+            <div class="med-info">
+              <div class="med-name">
+                Metoprolol Succinate 25 mg
+                <span class="badge badge-info auto-merged-badge" onclick="unmerge('metoprolol')">
+                  <span class="merge-normal">Auto Merged</span>
+                  <span class="merge-hover">
+                    Unmerge
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="opacity:0.4;flex-shrink:0;"><line x1="2" y1="2" x2="8" y2="8" stroke="#142125" stroke-width="1.4" stroke-linecap="round"/><line x1="8" y1="2" x2="2" y2="8" stroke="#142125" stroke-width="1.4" stroke-linecap="round"/></svg>
+                  </span>
+                </span>
+              </div>
+              <div class="med-sig">Take one tablet by mouth daily</div>
+              <div class="med-adherence">
+                <svg class="paper-icon" viewBox="0 0 16 16" fill="none"><path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="#8398a0" stroke-width="1.1" stroke-linejoin="round"/><path d="M10 2v4h4" stroke="#8398a0" stroke-width="1.1" stroke-linejoin="round"/><path d="M5 8h6M5 10.5h4" stroke="#8398a0" stroke-width="1" stroke-linecap="round"/></svg>
+                <span>pt adherent, fills on schedule</span>
+              </div>
+              <div class="med-ai-insight">Rx from 5/12/20 merged with fill data from 5/20/20</div>
+            </div>
+            <div class="row-actions">
+              <button class="btn-sm-default dc-btn" onclick="toggleDC('metoprolol')">D/C</button>
+              <button class="btn-sm-default" onclick="openActionsMenu(event,'metoprolol')">Actions</button>
+            </div>
+          </div>
+          <div class="dc-options">
+            <div style="font-size:11px;color:rgba(0,24,38,0.58);margin-bottom:3px;">Reason for D/C</div>
+            <div class="seg-radio">
+              <button class="seg-radio-btn selected" onclick="selectDCReason(this)">Patient D/C</button>
+              <button class="seg-radio-btn" onclick="selectDCReason(this)">Complete</button>
+              <button class="seg-radio-btn" onclick="selectDCReason(this)">Internal D/C</button>
+              <button class="seg-radio-btn" onclick="selectDCReason(this)">External D/C</button>
+            </div>
+            <div class="dc-divider"></div>
+            <label class="dc-checkbox-row"><input type="checkbox"> Send cancellation request</label>
+          </div>
+          <div class="nested-rows open" id="nested-metoprolol">
+            <div class="nested-timeline-label"><span>Timeline</span></div>
+            <div class="nested-row">
+              <div style="width:20px;flex-shrink:0;opacity:0;"></div>
+              <div class="nested-date">05/20/20</div>
+              <div class="nested-med">
+                <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;"><span class="badge badge-neutral">Doc'd New</span><span class="nested-med-name"><strong>Metoprolol Succ 25 mg</strong>: Take one</span></div>
+                <div class="nested-med-sig">tablet by mouth daily</div>
+              </div>
+            </div>
+            <div class="nested-row" style="padding-bottom:4px;">
+              <div style="width:20px;flex-shrink:0;opacity:0;"></div>
+              <div class="nested-date">05/12/20</div>
+              <div class="nested-med">
+                <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;"><span class="badge badge-neutral">New Rx</span><span class="nested-med-name"><strong>Metoprolol Succ 25 mg</strong>: Take one</span></div>
+                <div class="nested-med-sig">tablet by mouth daily</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Row: Omeprazole (Likely Duplicate) ── -->
+        <div class="med-card" id="card-omeprazole">
+          <div class="med-card-content">
+            <div class="chevron-wrap" onclick="toggleRow('omeprazole')">
+              <div class="chevron" id="chev-omeprazole"></div>
+              <input type="checkbox" class="merge-cb" onclick="event.stopPropagation()" onchange="updateMergeBanner()">
+            </div>
+            <div class="date-col">04/30/20</div>
+            <div class="med-info">
+              <div class="med-name">
+                Omeprazole 20 mg Cap
+                <span class="badge" id="badge-dup-omeprazole" style="background:#dbebff;color:#07479d;">Likely Duplicate</span>
+              </div>
+              <div class="med-sig">Take one capsule by mouth once daily</div>
+              <div class="add-note-hint">
+                <svg class="paper-icon" viewBox="0 0 16 16" fill="none"><path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="#8398a0" stroke-width="1.1" stroke-linejoin="round"/><path d="M10 2v4h4" stroke="#8398a0" stroke-width="1.1" stroke-linejoin="round"/><path d="M5 8h6M5 10.5h4" stroke="#8398a0" stroke-width="1" stroke-linecap="round"/></svg>
+                <span>Add note...</span>
+              </div>
+            </div>
+            <div class="row-actions">
+              <button class="btn-sm-default dc-btn" onclick="toggleDC('omeprazole')">D/C</button>
+              <button class="btn-sm-default" onclick="openActionsMenu(event,'omeprazole')">Actions</button>
+            </div>
+          </div>
+          <div class="dc-options">
+            <div style="font-size:11px;color:rgba(0,24,38,0.58);margin-bottom:3px;">Reason for D/C</div>
+            <div class="seg-radio">
+              <button class="seg-radio-btn selected" onclick="selectDCReason(this)">Patient D/C</button>
+              <button class="seg-radio-btn" onclick="selectDCReason(this)">Complete</button>
+              <button class="seg-radio-btn" onclick="selectDCReason(this)">Internal D/C</button>
+              <button class="seg-radio-btn" onclick="selectDCReason(this)">External D/C</button>
+            </div>
+            <div class="dc-divider"></div>
+            <label class="dc-checkbox-row"><input type="checkbox"> Send cancellation request</label>
+          </div>
+          <div class="nested-rows" id="nested-omeprazole"></div>
+        </div>
+
+        <!-- ── Row: Sertraline (Likely Not Taking) ── -->
+        <div class="med-card" id="card-sertraline" style="border-bottom:none;">
+          <div class="med-card-content">
+            <div class="chevron-wrap" onclick="toggleRow('sertraline')">
+              <div class="chevron" id="chev-sertraline"></div>
+              <input type="checkbox" class="merge-cb" onclick="event.stopPropagation()" onchange="updateMergeBanner()">
+            </div>
+            <div class="date-col">03/15/20</div>
+            <div class="med-info">
+              <div class="med-name">
+                Sertraline 50 mg Tab
+                <span class="badge badge-info" id="badge-lnt-sertraline">Likely Not Taking</span>
+              </div>
+              <div class="med-sig">Take one tablet by mouth once daily in the morning</div>
+              <div class="add-note-hint">
+                <svg class="paper-icon" viewBox="0 0 16 16" fill="none"><path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="#8398a0" stroke-width="1.1" stroke-linejoin="round"/><path d="M10 2v4h4" stroke="#8398a0" stroke-width="1.1" stroke-linejoin="round"/><path d="M5 8h6M5 10.5h4" stroke="#8398a0" stroke-width="1" stroke-linecap="round"/></svg>
+                <span>Add note...</span>
+              </div>
+              <div class="med-ai-insight">Pt has not refilled this med since 03/15/20.</div>
+            </div>
+            <div class="row-actions">
+              <button class="btn-sm-default dc-btn" onclick="toggleDC('sertraline')">D/C</button>
+              <button class="btn-sm-default" onclick="openActionsMenu(event,'sertraline')">Actions</button>
+            </div>
+          </div>
+          <div class="dc-options">
+            <div style="font-size:11px;color:rgba(0,24,38,0.58);margin-bottom:3px;">Reason for D/C</div>
+            <div class="seg-radio">
+              <button class="seg-radio-btn selected" onclick="selectDCReason(this)">Patient D/C</button>
+              <button class="seg-radio-btn" onclick="selectDCReason(this)">Complete</button>
+              <button class="seg-radio-btn" onclick="selectDCReason(this)">Internal D/C</button>
+              <button class="seg-radio-btn" onclick="selectDCReason(this)">External D/C</button>
+            </div>
+            <div class="dc-divider"></div>
+            <label class="dc-checkbox-row"><input type="checkbox"> Send cancellation request</label>
+          </div>
+          <div class="nested-rows" id="nested-sertraline"></div>
+        </div>
+
+      </div><!-- /modal-body -->
+    </div><!-- /right-panel -->
+  </div><!-- /modal-panels -->
+
+  <!-- Footer -->
+  <div class="modal-footer">
+    <button class="btn-primary" id="footer-primary-btn" onclick="handlePrimaryFooter()">Confirm Medication List</button>
+    <button class="btn-default" onclick="exitMergeMode()">Close</button>
+  </div>
+
+</div><!-- /modal -->
+
+<!-- Actions dropdown -->
+<div id="actions-dropdown">
+  <div class="dropdown-item" onclick="enterMergeMode(actionsSourceId)">Merge with other med</div>
+</div>
+
+<script>
+  /* ══════════════════════════════════════════════════
+     CHANGELOG DATA & STATE
+  ══════════════════════════════════════════════════ */
+  const changelog = [
+    {
+      id: 'fill-lisinopril', type: 'fill', state: 'pending', resolution: null,
+      name: 'Lisinopril 10 mg', sig: 'Take one tablet by mouth once daily',
+      meta: { pharmacy: 'CVS Pharmacy', fillDate: '05/01/20', prescriber: 'Dr. M. Rivera' }
+    },
+    {
+      id: 'fill-metformin', type: 'fill', state: 'pending', resolution: null,
+      name: 'Metformin ER 500 mg', sig: 'Take one tablet by mouth twice daily with meals',
+      meta: { pharmacy: 'Walgreens', fillDate: '04/28/20', prescriber: 'Dr. T. Nguyen' }
+    },
+    {
+      id: 'fill-existing-aspirin', type: 'fill-existing', state: 'pending', resolution: null,
+      name: 'Aspirin 81 mg Tab', originalName: 'Aspirin 81 mg Tab',
+      medId: 'aspirin', sig: 'Take one tablet by mouth once daily',
+      discrepancy: null, pendingAnnotation: null,
+      meta: { pharmacy: 'CVS Pharmacy', fillDate: '05/02/20', prescriber: 'Dr. L. Park', daysSupply: '30' },
+      onFile: { dose: '81 mg', sig: 'Take one tablet by mouth once daily', prescriber: 'Dr. L. Park' }
+    },
+    {
+      id: 'fill-existing-levothyroxine', type: 'fill-existing', state: 'pending', resolution: null,
+      name: 'Levothyroxine 75 mcg Tab', originalName: 'Levothyroxine 50 mcg Tab',
+      medId: 'levothyroxine', sig: 'Take one tablet by mouth once daily in the morning',
+      discrepancy: { type: 'Dose change', description: '50 mcg on file from 03/10/20 — this fill is for 75 mcg' },
+      pendingAnnotation: 'Filled at 75 mcg on 05/05/20 — review needed',
+      meta: { pharmacy: 'Walgreens', fillDate: '05/05/20', prescriber: 'Dr. T. Nguyen', daysSupply: '30' },
+      onFile: { dose: '50 mcg', sig: 'Take one tablet by mouth once daily in the morning', prescriber: 'Dr. T. Nguyen' }
+    },
+    {
+      id: 'lnt-amoxicillin', type: 'likely-not-taking', state: 'pending', resolution: null,
+      name: 'Amoxicillin 250 mg Cap', sig: 'Take one tablet by mouth every 8 hours until complete',
+      meta: { reason: 'No pharmacy refill since 05/24/20' }, medId: 'amoxicillin'
+    },
+    {
+      id: 'lnt-sertraline', type: 'likely-not-taking', state: 'pending', resolution: null,
+      name: 'Sertraline 50 mg Tab', sig: 'Take one tablet by mouth once daily in the morning',
+      meta: { reason: 'No pharmacy refill since 03/15/20' }, medId: 'sertraline'
+    },
+    {
+      id: 'dup-famotidine', type: 'duplicate', state: 'pending', resolution: null,
+      name: 'Famotidine · Pepcid',
+      names: ['Famotidine 20 mg Tab', 'Pepcid 20 mg Tab'],
+      sigs: ['One to two tablets by mouth twice daily', 'One to two tablets by mouth twice daily'],
+      meta: { reason: 'Redundant entries for the same treatment',
+              dates: ['05/24/20', '04/10/20'], providers: ['Dr. K. Smith', 'Dr. L. Jones'] },
+      medId: 'famotidine'
+    },
+    {
+      id: 'dup-omeprazole', type: 'duplicate', state: 'pending', resolution: null,
+      name: 'Omeprazole · Prilosec',
+      names: ['Omeprazole 20 mg Cap', 'Prilosec 20 mg Cap'],
+      sigs: ['Take one capsule by mouth once daily', 'Take one capsule by mouth once daily'],
+      meta: { reason: 'Redundant entries for the same treatment',
+              dates: ['04/30/20', '03/12/20'], providers: ['Dr. K. Smith', 'Dr. J. Park'] },
+      medId: 'omeprazole'
+    },
+    {
+      id: 'auto-atorvastatin', type: 'auto-merged', state: 'resolved', resolution: null,
+      name: 'Atorvastatin 20 mg', sig: 'Take one tablet by mouth twice a day',
+      meta: { mergeReason: 'Identical med, dose, sig — scripts to two pharmacies' },
+      medId: 'atorvastatin'
+    },
+    {
+      id: 'auto-metoprolol', type: 'auto-merged', state: 'resolved', resolution: null,
+      name: 'Metoprolol Succinate 25 mg', sig: 'Take one tablet by mouth daily',
+      meta: { mergeReason: 'Identical med, dose, sig — scripts to two pharmacies' },
+      medId: 'metoprolol'
+    }
+  ];
+
+  let activeItemId = 'fill-lisinopril';
+
+  const MED_ROW_MAP = {
+    'fill-lisinopril':   ['card-ghost-lisinopril'],
+    'fill-metformin':    ['card-ghost-metformin'],
+    'lnt-amoxicillin':   ['card-amoxicillin'],
+    'lnt-sertraline':    ['card-sertraline'],
+    'dup-famotidine':    ['card-famotidine'],
+    'dup-omeprazole':    ['card-omeprazole'],
+    'auto-atorvastatin': ['card-atorvastatin'],
+    'auto-metoprolol':          ['card-metoprolol'],
+    'fill-existing-aspirin':    ['card-aspirin'],
+    'fill-existing-levothyroxine': ['card-levothyroxine']
+  };
+
+  function highlightMedRows(id) {
+    document.querySelectorAll('.med-card').forEach(el => el.classList.remove('reviewing'));
+    const rows = MED_ROW_MAP[id] || [];
+    rows.forEach((rowId, i) => {
+      const el = document.getElementById(rowId);
+      if (el) {
+        el.classList.add('reviewing');
+        if (i === 0) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    });
+  }
+
+  function clearAllHighlights() {
+    document.querySelectorAll('.med-card').forEach(el => el.classList.remove('reviewing'));
+  }
+
+  function selectItem(id) {
+    activeItemId = id;
+    document.querySelectorAll('.sidebar-item').forEach(el => {
+      el.classList.toggle('active', el.id === 'si-' + id);
+    });
+    document.querySelectorAll('.sidebar-item-detail').forEach(el => el.classList.remove('open'));
+    highlightMedRows(id);
+    renderSidebarDetail(id);
+  }
+
+  function bulkResolveSection(type, resolution) {
+    const pending = changelog.filter(i => i.type === type && i.state === 'pending');
+    if (!pending.length) return;
+    pending.forEach(item => {
+      item.state = 'resolved';
+      item.resolution = resolution;
+      applyMutation(item, resolution);
+      updateSidebarItem(item.id);
+      renderSidebarDetail(item.id);
+    });
+    updateCounts();
+    updateFooterStatus();
+    setTimeout(() => {
+      const next = changelog.find(i => i.state === 'pending');
+      if (next) {
+        selectItem(next.id);
+      } else {
+        const allDone = changelog.filter(i => i.type !== 'auto-merged').every(i => i.state === 'resolved');
+        if (allDone) {
+          document.getElementById('all-done-banner').classList.add('visible');
+          clearAllHighlights();
+        }
+      }
+    }, 700);
+  }
+
+  function resolveItem(id, resolution) {
+    const item = changelog.find(i => i.id === id);
+    if (!item) return;
+    item.state = 'resolved';
+    item.resolution = resolution;
+    applyMutation(item, resolution);
+    updateSidebarItem(id);
+    updateCounts();
+    updateFooterStatus();
+    renderSidebarDetail(id);
+    setTimeout(() => {
+      const next = changelog.find(i => i.state === 'pending');
+      if (next) {
+        selectItem(next.id);
+      } else {
+        const allDone = changelog.filter(i => i.type !== 'auto-merged').every(i => i.state === 'resolved');
+        if (allDone) {
+          document.getElementById('all-done-banner').classList.add('visible');
+          clearAllHighlights();
+        }
+      }
+    }, 700);
+  }
+
+  function undoItem(id) {
+    const item = changelog.find(i => i.id === id);
+    if (!item) return;
+    undoMutation(item);
+    if (item.type === 'auto-merged') {
+      item.state = 'resolved';
+      item.resolution = null;
+    } else {
+      item.state = 'pending';
+      item.resolution = null;
+    }
+    document.getElementById('all-done-banner').classList.remove('visible');
+    updateSidebarItem(id);
+    updateCounts();
+    updateFooterStatus();
+    highlightMedRows(id);
+    renderSidebarDetail(id);
+  }
+
+  function applyMutation(item, resolution) {
+    if (item.type === 'fill') {
+      const slug = item.id.replace('fill-', '');
+      const ghost = document.getElementById('card-ghost-' + slug);
+      if (resolution === 'added') {
+        if (ghost) ghost.remove();
+        addMedRow(item);
+      } else if (resolution === 'dismissed') {
+        if (ghost) ghost.remove();
+      }
+    } else if (item.type === 'likely-not-taking') {
+      const lntBadge = document.getElementById('badge-lnt-' + item.medId);
+      if (resolution === 'discontinued') {
+        const card = document.getElementById('card-' + item.medId);
+        if (card) card.style.opacity = '0.5';
+        if (lntBadge) lntBadge.style.display = 'none';
+        const nameEl = document.querySelector('#card-' + item.medId + ' .med-name');
+        const discId = 'badge-disc-' + item.medId;
+        if (nameEl && !document.getElementById(discId)) {
+          const b = document.createElement('span');
+          b.className = 'badge'; b.id = discId;
+          b.style.cssText = 'background:#F7C1C1;color:#791F1F;';
+          b.textContent = 'Discontinued';
+          nameEl.appendChild(b);
+        }
+      } else if (resolution === 'kept') {
+        if (lntBadge) lntBadge.style.display = 'none';
+      }
+    } else if (item.type === 'duplicate') {
+      const dupBadge = document.getElementById('badge-dup-' + item.medId);
+      if (dupBadge) dupBadge.style.display = 'none';
+    } else if (item.type === 'auto-merged' && resolution === 'undone') {
+      unmerge(item.medId);
+    } else if (item.type === 'fill-existing') {
+      applyFillExistingMutation(item, resolution);
+    }
+  }
+
+  function applyFillExistingMutation(item, resolution) {
+    const card = document.getElementById('card-' + item.medId);
+    const annEl = document.getElementById('ann-fill-existing-' + item.medId);
+    if (resolution === 'signed-off') {
+      if (annEl) {
+        annEl.style.cssText = 'color:#15803d;font-style:normal;';
+        annEl.textContent = `Confirmed — filled ${item.meta.fillDate} at ${item.meta.pharmacy}`;
+      }
+    } else if (resolution === 'updated') {
+      if (card) {
+        const nameEl = card.querySelector('.med-name');
+        if (nameEl) {
+          const tn = [...nameEl.childNodes].find(n => n.nodeType === 3);
+          if (tn) tn.textContent = item.name;
+        }
+        card.style.background = '#FAEEDA';
+      }
+      if (annEl) {
+        annEl.style.cssText = 'color:#15803d;font-style:normal;';
+        annEl.textContent = `Updated to ${item.name} · filled ${item.meta.fillDate} at ${item.meta.pharmacy}`;
+      }
+    } else if (resolution === 'kept-current') {
+      if (annEl) {
+        annEl.style.cssText = 'color:rgba(0,24,38,0.45);font-style:normal;';
+        annEl.textContent = `Fill dismissed — kept at ${item.onFile.dose}`;
+      }
+    }
+    // Hide the pending badge in the timeline row
+    const nestedEl = document.getElementById('nested-' + item.medId);
+    if (nestedEl) {
+      const pb = nestedEl.querySelector('.badge-pending');
+      if (pb) pb.style.display = 'none';
+    }
+    updateFillExistingCard();
+  }
+
+  function updateFillExistingCard() { /* card uses standard gray styling */ }
+
+  function undoMutation(item) {
+    if (item.type === 'fill') {
+      const slug = item.id.replace('fill-', '');
+      if (item.resolution === 'added') {
+        const row = document.getElementById('card-added-' + slug);
+        if (row) row.remove();
+        restoreGhostRow(item);
+      } else if (item.resolution === 'dismissed') {
+        restoreGhostRow(item);
+      }
+    } else if (item.type === 'likely-not-taking') {
+      const lntBadge = document.getElementById('badge-lnt-' + item.medId);
+      if (item.resolution === 'discontinued') {
+        const card = document.getElementById('card-' + item.medId);
+        if (card) card.style.opacity = '';
+        const discBadge = document.getElementById('badge-disc-' + item.medId);
+        if (discBadge) discBadge.remove();
+        if (lntBadge) lntBadge.style.display = '';
+      } else if (item.resolution === 'kept') {
+        if (lntBadge) lntBadge.style.display = '';
+      }
+    } else if (item.type === 'duplicate') {
+      const dupBadge = document.getElementById('badge-dup-' + item.medId);
+      if (dupBadge) dupBadge.style.display = '';
+    } else if (item.type === 'auto-merged' && item.resolution === 'undone') {
+      remerge(item.medId);
+    } else if (item.type === 'fill-existing') {
+      undoFillExistingMutation(item);
+    }
+  }
+
+  function undoFillExistingMutation(item) {
+    const card = document.getElementById('card-' + item.medId);
+    const annEl = document.getElementById('ann-fill-existing-' + item.medId);
+    if (item.resolution === 'updated' && card) {
+      const nameEl = card.querySelector('.med-name');
+      if (nameEl) {
+        const tn = [...nameEl.childNodes].find(n => n.nodeType === 3);
+        if (tn) tn.textContent = item.originalName;
+      }
+      card.style.background = '';
+    }
+    if (annEl) {
+      annEl.style.cssText = '';
+      if (item.pendingAnnotation) {
+        annEl.textContent = item.pendingAnnotation;
+      } else {
+        annEl.style.display = 'none';
+        annEl.textContent = '';
+      }
+    }
+    // Restore the pending badge in the timeline row
+    const nestedEl = document.getElementById('nested-' + item.medId);
+    if (nestedEl) {
+      const pb = nestedEl.querySelector('.badge-pending');
+      if (pb) pb.style.display = '';
+    }
+    updateFillExistingCard();
+  }
+
+  const GHOST_INSERT_ANCHORS = {
+    'lisinopril': ['card-ghost-metformin', 'card-metoprolol'],
+    'metformin':  ['card-metoprolol']
+  };
+
+  function restoreGhostRow(item) {
+    const slug = item.id.replace('fill-', '');
+    const ghostId = 'card-ghost-' + slug;
+    if (document.getElementById(ghostId)) return;
+    const body = document.querySelector('.modal-body');
+    let refEl = null;
+    for (const aid of (GHOST_INSERT_ANCHORS[slug] || [])) {
+      refEl = document.getElementById(aid);
+      if (refEl) break;
+    }
+    const ghost = document.createElement('div');
+    ghost.className = 'med-card ghost-row reviewing';
+    ghost.id = ghostId;
+    ghost.innerHTML = `
+      <div class="med-card-content">
+        <div class="chevron-wrap" style="visibility:hidden;"><div class="chevron"></div></div>
+        <div class="date-col">${item.meta.fillDate}</div>
+        <div class="med-info">
+          <div class="med-name">${item.name} <span class="badge badge-pending">Pending Sign Off</span></div>
+          <div class="med-sig">${item.sig}</div>
+          <div class="med-annotation">${item.meta.pharmacy} · ${item.meta.prescriber}</div>
+        </div>
+        <div class="row-actions" style="visibility:hidden;"></div>
+      </div>`;
+    body.insertBefore(ghost, refEl);
+  }
+
+  function addMedRow(item) {
+    const slug = item.id.replace('fill-', '');
+    const body = document.querySelector('.modal-body');
+    const firstRealCard = body.querySelector('.med-card:not(.ghost-row)') || body.querySelector('.med-card');
+    const card = document.createElement('div');
+    card.className = 'med-card';
+    card.id = 'card-added-' + slug;
+    card.style.cssText = 'background:#FAEEDA;border-left:3px solid #EF9F27;border-bottom:1px solid #e4eaec;';
+    card.innerHTML = `
+      <div class="med-card-content">
+        <div class="chevron-wrap" style="visibility:hidden;"><div class="chevron"></div>
+          <input type="checkbox" class="merge-cb" onclick="event.stopPropagation()" onchange="updateMergeBanner()">
+        </div>
+        <div class="date-col">${item.meta.fillDate}</div>
+        <div class="med-info">
+          <div class="med-name">${item.name}</div>
+          <div class="med-sig">${item.sig}</div>
+          <div class="med-annotation">Added ${item.meta.fillDate} · ${item.meta.pharmacy} · ${item.meta.prescriber}</div>
+        </div>
+        <div class="row-actions">
+          <button class="btn-sm-default dc-btn" onclick="toggleDC('added-${slug}')">D/C</button>
+          <button class="btn-sm-default">Actions</button>
+        </div>
+      </div>
+      <div class="dc-options">
+        <div style="font-size:11px;color:rgba(0,24,38,0.58);margin-bottom:3px;">Reason for D/C</div>
+        <div class="seg-radio">
+          <button class="seg-radio-btn selected" onclick="selectDCReason(this)">Patient D/C</button>
+          <button class="seg-radio-btn" onclick="selectDCReason(this)">Complete</button>
+          <button class="seg-radio-btn" onclick="selectDCReason(this)">Internal D/C</button>
+          <button class="seg-radio-btn" onclick="selectDCReason(this)">External D/C</button>
+        </div>
+        <div class="dc-divider"></div>
+        <label class="dc-checkbox-row"><input type="checkbox"> Send cancellation request</label>
+      </div>
+      <div class="nested-rows" id="nested-added-${slug}"></div>`;
+    body.insertBefore(card, firstRealCard);
+  }
+
+  function updateSidebarItem(id) {
+    const item = changelog.find(i => i.id === id);
+    const statusEl = document.getElementById('si-status-' + id);
+    const sidebarEl = document.getElementById('si-' + id);
+    if (!item || !statusEl || !sidebarEl) return;
+
+    const LABELS = {
+      added: 'Added to med list', dismissed: 'Dismissed',
+      kept: 'Kept on list', discontinued: 'Discontinued',
+      merged: 'Merged', 'kept-separate': 'Kept separate',
+      confirmed: 'Merge confirmed', undone: 'Merge undone',
+      'signed-off': 'Signed off', updated: 'Updated', 'kept-current': 'Kept current'
+    };
+    const POS = ['added','kept','merged','confirmed','signed-off','updated'];
+
+    if (item.type === 'auto-merged') {
+      sidebarEl.classList.add('resolved');
+      if (item.resolution === null) {
+        statusEl.innerHTML = '<span class="s-auto">✓ Merged</span>';
+      } else if (POS.includes(item.resolution)) {
+        statusEl.innerHTML = `<span class="s-pos">✓ ${LABELS[item.resolution]}</span>`;
+      } else {
+        statusEl.innerHTML = `<span class="s-neg">– ${LABELS[item.resolution] || item.resolution}</span>`;
+      }
+      return;
+    }
+
+    if (item.state === 'pending') {
+      statusEl.innerHTML = '';
+      sidebarEl.classList.remove('resolved');
+    } else {
+      const label = LABELS[item.resolution] || item.resolution;
+      if (POS.includes(item.resolution)) {
+        statusEl.innerHTML = `<span class="s-pos">✓ ${label}</span>`;
+      } else {
+        statusEl.innerHTML = `<span class="s-neg">– ${label}</span>`;
+      }
+      sidebarEl.classList.add('resolved');
+    }
+  }
+
+  function updateCounts() {
+    const pendingCount = changelog.filter(i => i.state === 'pending').length;
+    const badge = document.getElementById('nr-badge');
+    if (badge) {
+      badge.textContent = pendingCount === 0 ? '✓' : pendingCount;
+      badge.classList.toggle('all-done', pendingCount === 0);
+    }
+    const nonAuto = changelog.filter(i => i.type !== 'auto-merged');
+    const resolved = nonAuto.filter(i => i.state === 'resolved').length;
+    const total = nonAuto.length;
+    const label = document.getElementById('progress-label');
+    const fill  = document.getElementById('progress-fill');
+    if (label) label.textContent = `${resolved} of ${total} reviewed`;
+    if (fill)  fill.style.width = (total > 0 ? (resolved / total * 100) : 0) + '%';
+    const bulkMap = {
+      'bulk-btn-fill':          'fill',
+      'bulk-btn-fill-existing': 'fill-existing',
+      'bulk-btn-lnt':           'likely-not-taking',
+      'bulk-btn-dup':           'duplicate'
+    };
+    Object.entries(bulkMap).forEach(([btnId, type]) => {
+      const btn = document.getElementById(btnId);
+      if (btn) btn.style.display = changelog.some(i => i.type === type && i.state === 'pending') ? '' : 'none';
+    });
+  }
+
+  function updateFooterStatus() {
+    const el = document.getElementById('footer-status');
+    if (!el) return;
+    const pending = changelog.filter(i => i.state === 'pending').length;
+    if (pending > 0) {
+      el.textContent = `${pending} item${pending === 1 ? '' : 's'} need review`;
+      el.classList.remove('all-done');
+    } else {
+      el.textContent = 'All items reviewed — ready to confirm';
+      el.classList.add('all-done');
+    }
+  }
+
+  function renderSidebarDetail(id) {
+    const detailEl = document.getElementById('si-detail-' + id);
+    if (!detailEl) return;
+    const item = changelog.find(i => i.id === id);
+    if (!item) return;
+
+    const LABELS = {
+      added: 'Added to med list', dismissed: 'Dismissed',
+      kept: 'Kept on list', discontinued: 'Discontinued',
+      merged: 'Merged', 'kept-separate': 'Kept separate',
+      confirmed: 'Merge confirmed', undone: 'Merge undone',
+      'signed-off': 'Signed off', updated: 'Updated', 'kept-current': 'Kept current'
+    };
+    const POS = ['added','kept','merged','confirmed','signed-off','updated'];
+
+    let contentHtml = '';
+
+    if (item.state === 'resolved' && item.resolution !== null) {
+      const label = LABELS[item.resolution] || item.resolution;
+      const isPos = POS.includes(item.resolution);
+      const noUndo = item.resolution === 'confirmed';
+      contentHtml = `
+        <div class="si-resolved">
+          <span class="${isPos ? 'si-res-pos' : 'si-res-neg'}">${isPos ? '✓' : '–'} ${label}</span>
+          ${!noUndo ? `<button class="si-btn-undo" onclick="event.stopPropagation();undoItem('${id}')">Undo</button>` : ''}
+        </div>`;
+
+    } else if (item.type === 'fill') {
+      contentHtml = `
+        <div class="si-annotation">${item.sig}</div>
+        <div class="si-source">${item.meta.pharmacy} · ${item.meta.fillDate} · ${item.meta.prescriber} · Not previously on file</div>
+        <div class="si-actions">
+          <button class="si-btn-primary" onclick="event.stopPropagation();resolveItem('${id}','added')">Sign Off & Add to Med List</button>
+          <button class="si-btn-secondary" onclick="event.stopPropagation();resolveItem('${id}','dismissed')">Dismiss</button>
+        </div>`;
+
+    } else if (item.type === 'likely-not-taking') {
+      contentHtml = `
+        <div class="si-annotation">${item.sig}</div>
+        <div class="si-actions">
+          <button class="si-btn-danger" onclick="event.stopPropagation();resolveItem('${id}','discontinued')">Discontinue</button>
+          <button class="si-btn-secondary" onclick="event.stopPropagation();resolveItem('${id}','kept')">Keep on list</button>
+        </div>`;
+
+    } else if (item.type === 'duplicate') {
+      contentHtml = `
+        <div class="si-source">${item.meta.reason}</div>
+        <div class="si-dup-cards">
+          <div class="si-dup-card">
+            <div class="si-dup-card-name">${item.names[0]}</div>
+            <div class="si-dup-card-meta">${item.meta.dates[0]} · ${item.meta.providers[0]}</div>
+          </div>
+          <div class="si-dup-card">
+            <div class="si-dup-card-name">${item.names[1]}</div>
+            <div class="si-dup-card-meta">${item.meta.dates[1]} · ${item.meta.providers[1]}</div>
+          </div>
+        </div>
+        <div class="si-actions">
+          <button class="si-btn-primary" onclick="event.stopPropagation();resolveItem('${id}','merged')">Merge</button>
+          <button class="si-btn-secondary" onclick="event.stopPropagation();resolveItem('${id}','kept-separate')">Keep separate</button>
+        </div>`;
+
+    } else if (item.type === 'auto-merged') {
+      contentHtml = `
+        <div class="si-annotation">${item.sig}</div>
+        <div class="si-source">${item.meta.mergeReason}</div>
+        <div class="si-actions">
+          <button class="si-btn-primary" onclick="event.stopPropagation();resolveItem('${id}','undone')">Undo merge</button>
+        </div>`;
+
+    } else if (item.type === 'fill-existing') {
+      const conflictHtml = item.discrepancy
+        ? `<div class="si-callout">${item.discrepancy.description}</div>`
+        : '';
+      const actionHtml = item.discrepancy
+        ? `<button class="si-btn-primary" onclick="event.stopPropagation();resolveItem('${id}','updated')">Update &amp; sign off</button>
+           <button class="si-btn-secondary" onclick="event.stopPropagation();resolveItem('${id}','kept-current')">Keep current</button>`
+        : `<button class="si-btn-primary" onclick="event.stopPropagation();resolveItem('${id}','signed-off')">Sign off</button>
+           <button class="si-btn-secondary" onclick="event.stopPropagation();resolveItem('${id}','dismissed')">Dismiss</button>`;
+      contentHtml = `
+        <div class="si-annotation">${item.sig} · ${item.meta.prescriber} · ${item.meta.daysSupply} days</div>
+        ${conflictHtml}
+        <div class="si-actions">${actionHtml}</div>`;
+    }
+
+    detailEl.innerHTML = contentHtml;
+    detailEl.classList.add('open');
+  }
+
+  function toggleRow(id) {
+    if (document.getElementById('main-modal').classList.contains('merge-mode')) return;
+    const nested = document.getElementById('nested-' + id);
+    const chev   = document.getElementById('chev-' + id);
+    if (!nested) return;
+    const isOpen = nested.classList.contains('open');
+    nested.classList.toggle('open', !isOpen);
+    chev.classList.toggle('open', !isOpen);
+  }
+
+  let dcCount = 0;
+
+  function toggleDC(id) {
+    const card = document.getElementById('card-' + id);
+    if (!card) return;
+    const isDC = card.classList.contains('dc');
+    if (isDC) {
+      card.classList.remove('dc');
+      card.querySelectorAll('.seg-radio-btn').forEach((b, i) => b.classList.toggle('selected', i === 0));
+      const cbRow = card.querySelector('.dc-checkbox-row input');
+      if (cbRow) cbRow.checked = false;
+      dcCount--;
+    } else {
+      card.classList.add('dc');
+      dcCount++;
+    }
+    updateFooterBtn();
+  }
+
+  function updateFooterBtn() {
+    const modal = document.getElementById('main-modal');
+    const btn   = document.getElementById('footer-primary-btn');
+    if (modal.classList.contains('merge-mode')) {
+      btn.textContent = 'Confirm Medications List';
+    } else {
+      btn.textContent = dcCount > 0 ? 'Save Changes to Medications' : 'Confirm Medication List';
+    }
+  }
+
+  function selectDCReason(btn) {
+    btn.closest('.seg-radio').querySelectorAll('.seg-radio-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+  }
+
+  function dcAll() {
+    ['albuterol','amoxicillin','aspirin','atorvastatin','dextro','famotidine','levothyroxine','metoprolol','omeprazole','sertraline'].forEach(id => {
+      const card = document.getElementById('card-' + id);
+      if (card && !card.classList.contains('dc')) { card.classList.add('dc'); dcCount++; }
+    });
+    updateFooterBtn();
+  }
+
+  function unmerge(medId) {
+    const card = document.getElementById('card-' + medId);
+    if (!card) return;
+    const badge = card.querySelector('.auto-merged-badge');
+    if (badge) badge.style.display = 'none';
+    const nested = document.getElementById('nested-' + medId);
+    const chev   = document.getElementById('chev-' + medId);
+    if (nested) nested.classList.remove('open');
+    if (chev)   chev.classList.remove('open');
+    const insight = card.querySelector('.med-ai-insight');
+    if (insight) insight.style.display = 'none';
+  }
+
+  function remerge(medId) {
+    const card = document.getElementById('card-' + medId);
+    if (!card) return;
+    const badge = card.querySelector('.auto-merged-badge');
+    if (badge) badge.style.display = '';
+    const insight = card.querySelector('.med-ai-insight');
+    if (insight) insight.style.display = '';
+    const nested = document.getElementById('nested-' + medId);
+    const chev   = document.getElementById('chev-' + medId);
+    if (nested) nested.classList.add('open');
+    if (chev)   chev.classList.add('open');
+  }
+
+  let actionsSourceId = null;
+
+  function openActionsMenu(event, id) {
+    event.stopPropagation();
+    const dropdown = document.getElementById('actions-dropdown');
+    const rect = event.currentTarget.getBoundingClientRect();
+    const alreadyOpen = dropdown.classList.contains('open') && actionsSourceId === id;
+    dropdown.classList.remove('open');
+    if (alreadyOpen) return;
+    actionsSourceId = id;
+    dropdown.style.top  = (rect.bottom + 4) + 'px';
+    dropdown.style.left = rect.left + 'px';
+    dropdown.classList.add('open');
+  }
+
+  document.addEventListener('click', e => {
+    const dd = document.getElementById('actions-dropdown');
+    if (!dd.contains(e.target)) dd.classList.remove('open');
+  });
+
+  function enterMergeMode(sourceId) {
+    document.getElementById('actions-dropdown').classList.remove('open');
+    actionsSourceId = null;
+    const modal = document.getElementById('main-modal');
+    modal.classList.add('merge-mode');
+    const sourceCard = document.getElementById('card-' + sourceId);
+    if (sourceCard) sourceCard.querySelector('.merge-cb').checked = true;
+    updateMergeBanner();
+    updateFooterBtn();
+  }
+
+  function exitMergeMode() {
+    const modal = document.getElementById('main-modal');
+    if (!modal.classList.contains('merge-mode')) return;
+    modal.classList.remove('merge-mode');
+    document.querySelectorAll('.merge-cb').forEach(cb => cb.checked = false);
+    resetMergeBanner();
+    updateFooterBtn();
+  }
+
+  function updateMergeBanner() {
+    const checked = document.querySelectorAll('.merge-cb:checked').length;
+    const prompt  = document.querySelector('.merge-banner-prompt');
+    const actions = document.querySelector('.merge-banner-actions');
+    const btn     = document.getElementById('merge-confirm-btn');
+    if (checked >= 2) {
+      prompt.style.display  = 'none';
+      actions.style.display = 'flex';
+      btn.textContent = 'Merge ' + checked + ' Items';
+    } else {
+      prompt.style.display  = 'block';
+      actions.style.display = 'none';
+    }
+  }
+
+  function resetMergeBanner() {
+    document.querySelector('.merge-banner-prompt').style.display  = 'block';
+    document.querySelector('.merge-banner-actions').style.display = 'none';
+  }
+
+  function handlePrimaryFooter() {
+    const modal = document.getElementById('main-modal');
+    if (modal.classList.contains('merge-mode')) { exitMergeMode(); return; }
+    const btn = document.getElementById('footer-primary-btn');
+    btn.textContent = 'Confirmed ✓';
+    btn.disabled = true;
+    const status = document.getElementById('footer-status');
+    if (status) { status.textContent = 'Clinical profile updated'; status.classList.add('all-done'); }
+  }
+
+  /* ── Init ── */
+  selectItem(activeItemId);
+  updateCounts();
+  updateFooterStatus();
+</script>
+
+</body>
+</html>
