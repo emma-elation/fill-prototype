@@ -59,9 +59,32 @@
       width: 300px; flex-shrink: 0;
       display: flex; flex-direction: column;
       border-right: 1px solid #dde4e7;
-      background: #EEF5FB; /* pale blue bg — cards float against it */
+      background: #EEF5FB;
       overflow: hidden;
+      transition: width 0.2s ease;
+      position: relative;
     }
+    .sidebar.collapsed { width: 36px; }
+    .sidebar-hd, .sidebar-list, .sidebar-ft { transition: opacity 0.15s; }
+    .sidebar.collapsed .sidebar-hd,
+    .sidebar.collapsed .sidebar-list,
+    .sidebar.collapsed .sidebar-ft { opacity: 0; pointer-events: none; }
+    .sidebar-toggle {
+      position: absolute; right: 8px; top: 10px;
+      width: 20px; height: 20px; border-radius: 3px;
+      background: none; border: none; padding: 0;
+      cursor: pointer; color: rgba(0,24,38,0.38);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 5;
+    }
+    .sidebar-toggle:hover { background: rgba(0,24,38,0.06); color: rgba(0,24,38,0.65); }
+    /* Collapsed: button expands to fill the full strip */
+    .sidebar.collapsed .sidebar-toggle {
+      inset: 0; width: auto; height: auto; border-radius: 0;
+      align-items: flex-start; justify-content: center; padding-top: 13px;
+      color: rgba(0,24,38,0.3);
+    }
+    .sidebar.collapsed .sidebar-toggle:hover { background: rgba(0,24,38,0.05); color: rgba(0,24,38,0.6); }
 
     /* Sidebar header (Change 6) */
     .sidebar-hd {
@@ -466,7 +489,13 @@
   <div class="modal-panels">
 
     <!-- ══ LEFT SIDEBAR ══ -->
-    <div class="sidebar">
+    <div class="sidebar" id="sidebar">
+
+      <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" title="Collapse">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+          <path id="sidebar-toggle-icon" d="M6.5 1.5L3 5L6.5 8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
 
       <div class="sidebar-hd">
         <div class="sidebar-title-row">
@@ -744,7 +773,7 @@
           </div>
           <div class="nested-rows" id="nested-aspirin">
             <div class="nested-timeline-label"><span>Fills</span></div>
-            <div class="nested-row" style="background:#FFFBF4;padding-bottom:4px;">
+            <div class="nested-row" style="padding-bottom:4px;">
               <div style="width:20px;flex-shrink:0;opacity:0;"></div>
               <div class="nested-date">05/02/20</div>
               <div class="nested-med">
@@ -928,7 +957,7 @@
           </div>
           <div class="nested-rows open" id="nested-levothyroxine">
             <div class="nested-timeline-label"><span>Fills</span></div>
-            <div class="nested-row" style="background:#FFFBF4;padding-bottom:4px;">
+            <div class="nested-row" style="padding-bottom:4px;">
               <div style="width:20px;flex-shrink:0;opacity:0;"></div>
               <div class="nested-date">05/05/20</div>
               <div class="nested-med">
@@ -1220,9 +1249,24 @@
       const el = document.getElementById(rowId);
       if (el) {
         el.classList.add('reviewing');
-        if (i === 0) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        if (i === 0) {
+          const body = document.querySelector('.modal-body');
+          if (body) {
+            const offset = el.offsetTop - body.offsetTop - 16;
+            body.scrollTo({ top: offset, behavior: 'smooth' });
+          }
+        }
       }
     });
+  }
+
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const icon = document.getElementById('sidebar-toggle-icon');
+    const btn = document.getElementById('sidebar-toggle');
+    const collapsed = sidebar.classList.toggle('collapsed');
+    if (icon) icon.setAttribute('d', collapsed ? 'M3.5 1.5L7 5L3.5 8.5' : 'M6.5 1.5L3 5L6.5 8.5');
+    if (btn) btn.title = collapsed ? 'Expand' : 'Collapse';
   }
 
   function clearAllHighlights() {
@@ -1313,8 +1357,42 @@
       const slug = item.id.replace('fill-', '');
       const ghost = document.getElementById('card-ghost-' + slug);
       if (resolution === 'added') {
-        if (ghost) ghost.remove();
-        addMedRow(item);
+        if (ghost) {
+          ghost.id = 'card-added-' + slug;
+          ghost.classList.remove('ghost-row');
+          ghost.style.cssText = 'border-bottom:1px solid #e4eaec;';
+          ghost.innerHTML = `
+            <div class="med-card-content">
+              <div class="chevron-wrap" style="visibility:hidden;"><div class="chevron"></div>
+                <input type="checkbox" class="merge-cb" onclick="event.stopPropagation()" onchange="updateMergeBanner()">
+              </div>
+              <div class="date-col">${item.meta.fillDate}</div>
+              <div class="med-info">
+                <div class="med-name">${item.name}</div>
+                <div class="med-sig">${item.sig}</div>
+                <div class="med-annotation">Added ${item.meta.fillDate} · ${item.meta.pharmacy} · ${item.meta.prescriber}</div>
+              </div>
+              <div class="row-actions">
+                <button class="btn-sm-default dc-btn" onclick="toggleDC('added-${slug}')">D/C</button>
+                <button class="btn-sm-default">Actions</button>
+              </div>
+            </div>
+            <div class="dc-options">
+              <div style="font-size:11px;color:rgba(0,24,38,0.58);margin-bottom:3px;">Reason for D/C</div>
+              <div class="seg-radio">
+                <button class="seg-radio-btn selected" onclick="selectDCReason(this)">Patient D/C</button>
+                <button class="seg-radio-btn" onclick="selectDCReason(this)">Complete</button>
+                <button class="seg-radio-btn" onclick="selectDCReason(this)">Internal D/C</button>
+                <button class="seg-radio-btn" onclick="selectDCReason(this)">External D/C</button>
+              </div>
+              <div class="dc-divider"></div>
+              <label class="dc-checkbox-row"><input type="checkbox"> Send cancellation request</label>
+            </div>
+            <div class="nested-rows" id="nested-added-${slug}"></div>`;
+          MED_ROW_MAP[item.id] = ['card-added-' + slug];
+        } else {
+          addMedRow(item);
+        }
       } else if (resolution === 'dismissed') {
         if (ghost) ghost.remove();
       }
@@ -1361,7 +1439,7 @@
           const tn = [...nameEl.childNodes].find(n => n.nodeType === 3);
           if (tn) tn.textContent = item.name;
         }
-        card.style.background = '#FAEEDA';
+        card.style.background = '';
       }
       if (annEl) {
         annEl.style.cssText = 'color:#15803d;font-style:normal;';
@@ -1388,9 +1466,26 @@
     if (item.type === 'fill') {
       const slug = item.id.replace('fill-', '');
       if (item.resolution === 'added') {
-        const row = document.getElementById('card-added-' + slug);
-        if (row) row.remove();
-        restoreGhostRow(item);
+        const added = document.getElementById('card-added-' + slug);
+        if (added) {
+          added.id = 'card-ghost-' + slug;
+          added.className = 'med-card ghost-row reviewing';
+          added.style.cssText = '';
+          added.innerHTML = `
+            <div class="med-card-content">
+              <div class="chevron-wrap" style="visibility:hidden;"><div class="chevron"></div></div>
+              <div class="date-col">${item.meta.fillDate}</div>
+              <div class="med-info">
+                <div class="med-name">${item.name} <span class="badge badge-pending">Pending Sign Off</span></div>
+                <div class="med-sig">${item.sig}</div>
+                <div class="med-annotation">${item.meta.pharmacy} · ${item.meta.prescriber}</div>
+              </div>
+              <div class="row-actions" style="visibility:hidden;"></div>
+            </div>`;
+          MED_ROW_MAP[item.id] = ['card-ghost-' + slug];
+        } else {
+          restoreGhostRow(item);
+        }
       } else if (item.resolution === 'dismissed') {
         restoreGhostRow(item);
       }
@@ -1483,7 +1578,7 @@
     const card = document.createElement('div');
     card.className = 'med-card';
     card.id = 'card-added-' + slug;
-    card.style.cssText = 'background:#FAEEDA;border-left:3px solid #EF9F27;border-bottom:1px solid #e4eaec;';
+    card.style.cssText = 'border-bottom:1px solid #e4eaec;';
     card.innerHTML = `
       <div class="med-card-content">
         <div class="chevron-wrap" style="visibility:hidden;"><div class="chevron"></div>
