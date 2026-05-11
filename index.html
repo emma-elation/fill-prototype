@@ -114,7 +114,11 @@
       overflow: hidden;
       background: white;
     }
-    .sc-card-auto { opacity: 0.7; }
+    .sc-card-auto { border-color: #c6d4db; }
+    .sc-card-auto .sc-card-hd { background: #eaf0f3; border-bottom-color: #c6d4db; }
+    .sc-card-auto .sc-card-label { color: rgba(0,24,38,0.35); }
+    .sc-card-auto .sidebar-item-meta { color: rgba(0,24,38,0.38); }
+    .sc-card-auto .s-auto { color: rgba(0,24,38,0.45); }
     .sc-card-alert { border-color: #EF9F27; }
     .sc-card-alert .sc-card-hd { background: #FAEEDA; border-bottom-color: #EF9F27; }
     .badge-fill { background: #e4eaec; color: rgba(0,24,38,0.58); }
@@ -603,10 +607,10 @@
           </div>
         </div>
 
-        <!-- Section card: Auto-resolved (de-emphasized) -->
+        <!-- Section card: Auto-merged -->
         <div class="sc-card sc-card-auto">
           <div class="sc-card-hd">
-            <span class="sc-card-label">Auto-resolved</span>
+            <span class="sc-card-label">Auto-merged</span>
                       </div>
           <div class="sidebar-item resolved" id="si-auto-atorvastatin" onclick="selectItem('auto-atorvastatin')">
             <div class="sidebar-item-name-row">
