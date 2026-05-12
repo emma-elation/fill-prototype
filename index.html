@@ -20,7 +20,9 @@
       background: white; border-radius: 4px; width: 860px;
       box-shadow: 0 0 1px 0 rgba(9,30,66,0.96), 0 8px 24px 0 rgba(9,30,66,0.4), 0 8px 48px 0 rgba(9,30,66,0.24);
       display: flex; flex-direction: column; overflow: hidden; max-height: 88vh;
+      transition: width 0.2s ease;
     }
+    .modal.sidebar-collapsed { width: 596px; }
 
     /* ── Dialog header ── */
     .modal-header {
@@ -46,6 +48,21 @@
       border-bottom: 0.5px solid #cdd6db;
       flex-shrink: 0;
     }
+    .med-col-hdr {
+      display: flex; align-items: center; gap: 16px;
+      padding: 5px 4px; flex-shrink: 0;
+      border-bottom: 0.5px solid #e4eaec;
+      background: white;
+    }
+    .med-col-hdr-label {
+      font-size: 10px; font-weight: 500; text-transform: uppercase;
+      letter-spacing: 0.05em; color: rgba(0,24,38,0.38);
+      cursor: pointer; user-select: none;
+      display: inline-flex; align-items: center; gap: 3px;
+    }
+    .med-col-hdr-label:hover { color: rgba(0,24,38,0.65); }
+    .med-col-hdr-label.sort-active { color: #0394ce; }
+    .sort-arrow { font-style: normal; font-size: 9px; }
 
     /* ── Two-panel area ── */
     .modal-panels {
@@ -78,13 +95,23 @@
       z-index: 5;
     }
     .sidebar-toggle:hover { background: rgba(0,24,38,0.06); color: rgba(0,24,38,0.65); }
-    /* Collapsed: button expands to fill the full strip */
+    .sidebar-toggle-badge {
+      display: none;
+      background: #185FA5; color: white;
+      font-size: 10px; font-weight: 500; line-height: 1;
+      border-radius: 10px; padding: 2px 5px;
+      min-width: 16px; text-align: center; white-space: nowrap;
+    }
+    .sidebar-toggle-badge.all-done { background: #3B6D11; }
+    /* Collapsed: button expands to fill the full strip, stacks badge above chevron */
     .sidebar.collapsed .sidebar-toggle {
       inset: 0; width: auto; height: auto; border-radius: 0;
-      align-items: flex-start; justify-content: center; padding-top: 13px;
-      color: rgba(0,24,38,0.3);
+      flex-direction: column; align-items: center; justify-content: flex-start;
+      padding-top: 10px; gap: 6px; color: rgba(0,24,38,0.3);
     }
     .sidebar.collapsed .sidebar-toggle:hover { background: rgba(0,24,38,0.05); color: rgba(0,24,38,0.6); }
+    .sidebar.collapsed .sidebar-toggle-badge { display: inline-flex; align-items: center; justify-content: center; }
+    .sidebar.collapsed .sidebar-toggle-badge[data-empty] { display: none; }
 
     /* Sidebar header (Change 6) */
     .sidebar-hd {
@@ -513,6 +540,7 @@
     <div class="sidebar" id="sidebar">
 
       <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" title="Collapse">
+        <span class="sidebar-toggle-badge" id="sidebar-toggle-badge" data-empty></span>
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
           <path id="sidebar-toggle-icon" d="M6.5 1.5L3 5L6.5 8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
@@ -672,6 +700,13 @@
           <span class="sidebar-title">Active Medications</span>
         </div>
         <div class="sidebar-subtitle">Includes pharmacy downloads pending review</div>
+      </div>
+
+      <!-- Column headers -->
+      <div class="med-col-hdr">
+        <div style="width:20px;flex-shrink:0;"></div>
+        <div class="med-col-hdr-label" id="col-hdr-date" style="width:59px;flex-shrink:0;justify-content:flex-end;white-space:nowrap;" onclick="sortMedList('date')">Last update<span class="sort-arrow" id="sort-arrow-date"></span></div>
+        <div class="med-col-hdr-label" id="col-hdr-name" style="flex:1;" onclick="sortMedList('name')">Medication<span class="sort-arrow" id="sort-arrow-name"></span></div>
       </div>
 
       <!-- All-done banner -->
@@ -1289,6 +1324,7 @@
     const icon = document.getElementById('sidebar-toggle-icon');
     const btn = document.getElementById('sidebar-toggle');
     const collapsed = sidebar.classList.toggle('collapsed');
+    document.getElementById('main-modal').classList.toggle('sidebar-collapsed', collapsed);
     if (icon) icon.setAttribute('d', collapsed ? 'M3.5 1.5L7 5L3.5 8.5' : 'M6.5 1.5L3 5L6.5 8.5');
     if (btn) btn.title = collapsed ? 'Expand' : 'Collapse';
   }
@@ -1705,6 +1741,20 @@
       const btn = document.getElementById(btnId);
       if (btn) btn.style.display = changelog.some(i => i.type === type && i.state === 'pending') ? '' : 'none';
     });
+    const toggleBadge = document.getElementById('sidebar-toggle-badge');
+    if (toggleBadge) {
+      if (total === 0) {
+        toggleBadge.setAttribute('data-empty', '');
+      } else if (pendingCount === 0) {
+        toggleBadge.removeAttribute('data-empty');
+        toggleBadge.textContent = '✓';
+        toggleBadge.classList.add('all-done');
+      } else {
+        toggleBadge.removeAttribute('data-empty');
+        toggleBadge.textContent = pendingCount;
+        toggleBadge.classList.remove('all-done');
+      }
+    }
   }
 
   function updateFooterStatus() {
@@ -1955,6 +2005,48 @@
     btn.disabled = true;
     const status = document.getElementById('footer-status');
     if (status) { status.textContent = 'Clinical profile updated'; status.classList.add('all-done'); }
+  }
+
+  /* ── Med list sorting ── */
+  let _sortCol = null, _sortDir = 'asc';
+
+  function parseMedDate(str) {
+    if (!str) return 0;
+    const p = str.trim().split('/');
+    if (p.length !== 3) return 0;
+    return new Date(2000 + parseInt(p[2]), parseInt(p[0]) - 1, parseInt(p[1])).getTime();
+  }
+
+  function sortMedList(col) {
+    if (_sortCol === col) {
+      _sortDir = _sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      _sortCol = col;
+      _sortDir = col === 'name' ? 'asc' : 'desc';
+    }
+    const body = document.querySelector('.modal-body');
+    const cards = [...body.querySelectorAll('.med-card')];
+    cards.sort((a, b) => {
+      if (_sortCol === 'name') {
+        const aT = [...(a.querySelector('.med-name')?.childNodes || [])].find(n => n.nodeType === 3)?.textContent?.trim() || '';
+        const bT = [...(b.querySelector('.med-name')?.childNodes || [])].find(n => n.nodeType === 3)?.textContent?.trim() || '';
+        return _sortDir === 'asc' ? aT.localeCompare(bT) : bT.localeCompare(aT);
+      } else {
+        const aD = parseMedDate(a.querySelector('.date-col')?.textContent);
+        const bD = parseMedDate(b.querySelector('.date-col')?.textContent);
+        return _sortDir === 'asc' ? aD - bD : bD - aD;
+      }
+    });
+    cards.forEach(c => body.appendChild(c));
+    // Update header indicators
+    ['date','name'].forEach(c => {
+      const hdr = document.getElementById('col-hdr-' + c);
+      const arrow = document.getElementById('sort-arrow-' + c);
+      if (!hdr || !arrow) return;
+      const active = _sortCol === c;
+      hdr.classList.toggle('sort-active', active);
+      arrow.textContent = active ? (_sortDir === 'asc' ? '↑' : '↓') : '';
+    });
   }
 
   /* ── Init ── */
