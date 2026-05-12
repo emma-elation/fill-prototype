@@ -133,6 +133,23 @@
       letter-spacing: 0.05em; color: rgba(0,24,38,0.45);
     }
     .sc-card-count { font-size: 10px; color: rgba(0,24,38,0.38); }
+    .sc-info-tip {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 13px; height: 13px; border-radius: 50%;
+      background: rgba(0,24,38,0.2); color: white;
+      font-size: 8px; font-weight: 700; font-style: italic;
+      cursor: default; flex-shrink: 0; vertical-align: middle;
+    }
+    #sc-tip-popup {
+      position: fixed; z-index: 9999;
+      background: #142125; color: rgba(255,255,255,0.9);
+      font-size: 11px; font-weight: 400; line-height: 1.5;
+      font-family: 'Open Sans', sans-serif;
+      border-radius: 5px; padding: 8px 10px; width: 210px;
+      white-space: normal; pointer-events: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      display: none;
+    }
     .sc-bulk-btn {
       font-size: 10px; font-weight: 500; color: rgba(0,24,38,0.45);
       background: none; border: none;
@@ -559,10 +576,13 @@
           </div>
         </div>
 
-        <!-- Section card: Likely not taking -->
+        <!-- Section card: Flagged for Review -->
         <div class="sc-card">
           <div class="sc-card-hd">
-            <span class="sc-card-label">Likely not taking</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;">
+              <span class="sc-card-label">Flagged for Review</span>
+              <span class="sc-info-tip" data-tip="Items are flagged using pharmacy fill history, patient-reported adherence, and medication data such as dosing patterns and refill gaps.">i</span>
+            </span>
             <button class="sc-bulk-btn" id="bulk-btn-lnt" onclick="bulkResolveSection('likely-not-taking','discontinued')">Discontinue All</button>
           </div>
           <div class="sidebar-item" id="si-lnt-amoxicillin" onclick="selectItem('lnt-amoxicillin')">
@@ -718,7 +738,7 @@
             <div class="med-info">
               <div class="med-name">
                 Amoxicillin 250 mg Cap
-                <span class="badge badge-info" id="badge-lnt-amoxicillin">Likely Not Taking</span>
+                <span class="badge badge-info" id="badge-lnt-amoxicillin">Flagged for Review</span>
               </div>
               <div class="med-sig">Take one tablet by mouth every 8 hours until complete</div>
               <div class="add-note-hint">
@@ -903,7 +923,7 @@
             <div class="med-info">
               <div class="med-name">
                 Famotidine 20 mg Tab
-                <span class="badge" id="badge-dup-famotidine" style="background:#dbebff;color:#07479d;">Likely Duplicate</span>
+                <span class="badge" id="badge-dup-famotidine" style="background:#dbebff;color:#07479d;">Possible Duplicate</span>
               </div>
               <div class="med-sig">One to two tablets by mouth twice daily</div>
               <div class="add-note-hint">
@@ -1063,7 +1083,7 @@
           </div>
         </div>
 
-        <!-- ── Row: Omeprazole (Likely Duplicate) ── -->
+        <!-- ── Row: Omeprazole (Possible Duplicate) ── -->
         <div class="med-card" id="card-omeprazole">
           <div class="med-card-content">
             <div class="chevron-wrap" onclick="toggleRow('omeprazole')">
@@ -1074,7 +1094,7 @@
             <div class="med-info">
               <div class="med-name">
                 Omeprazole 20 mg Cap
-                <span class="badge" id="badge-dup-omeprazole" style="background:#dbebff;color:#07479d;">Likely Duplicate</span>
+                <span class="badge" id="badge-dup-omeprazole" style="background:#dbebff;color:#07479d;">Possible Duplicate</span>
               </div>
               <div class="med-sig">Take one capsule by mouth once daily</div>
               <div class="add-note-hint">
@@ -1101,7 +1121,7 @@
           <div class="nested-rows" id="nested-omeprazole"></div>
         </div>
 
-        <!-- ── Row: Sertraline (Likely Not Taking) ── -->
+        <!-- ── Row: Sertraline (Flagged for Review) ── -->
         <div class="med-card" id="card-sertraline" style="border-bottom:none;">
           <div class="med-card-content">
             <div class="chevron-wrap" onclick="toggleRow('sertraline')">
@@ -1112,7 +1132,7 @@
             <div class="med-info">
               <div class="med-name">
                 Sertraline 50 mg Tab
-                <span class="badge badge-info" id="badge-lnt-sertraline">Likely Not Taking</span>
+                <span class="badge badge-info" id="badge-lnt-sertraline">Flagged for Review</span>
               </div>
               <div class="med-sig">Take one tablet by mouth once daily in the morning</div>
               <div class="add-note-hint">
@@ -1285,6 +1305,12 @@
     document.querySelectorAll('.sidebar-item-detail').forEach(el => el.classList.remove('open'));
     highlightMedRows(id);
     renderSidebarDetail(id);
+    const sidebarEl = document.getElementById('si-' + id);
+    const sidebarList = document.getElementById('sidebar-list');
+    if (sidebarEl && sidebarList) {
+      const offset = sidebarEl.offsetTop - sidebarList.offsetTop - 16;
+      sidebarList.scrollTo({ top: offset, behavior: 'smooth' });
+    }
   }
 
   function bulkResolveSection(type, resolution) {
@@ -1935,6 +1961,31 @@
   selectItem(activeItemId);
   updateCounts();
   updateFooterStatus();
+
+  /* ── Click on right-panel card → select matching left sidebar item ── */
+  document.querySelector('.modal-body').addEventListener('click', e => {
+    if (e.target.closest('button, input, label, .chevron-wrap')) return;
+    const card = e.target.closest('.med-card');
+    if (!card) return;
+    for (const [itemId, cardIds] of Object.entries(MED_ROW_MAP)) {
+      if (cardIds.includes(card.id)) { selectItem(itemId); return; }
+    }
+  });
+
+  /* ── Info tip tooltip (fixed-position to escape overflow:hidden on sidebar) ── */
+  const tipPopup = document.createElement('div');
+  tipPopup.id = 'sc-tip-popup';
+  document.body.appendChild(tipPopup);
+  document.querySelectorAll('.sc-info-tip').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      const rect = el.getBoundingClientRect();
+      tipPopup.textContent = el.getAttribute('data-tip');
+      tipPopup.style.left = rect.left + 'px';
+      tipPopup.style.top = (rect.bottom + 6) + 'px';
+      tipPopup.style.display = 'block';
+    });
+    el.addEventListener('mouseleave', () => { tipPopup.style.display = 'none'; });
+  });
 </script>
 
 </body>
