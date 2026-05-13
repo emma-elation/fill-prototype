@@ -14,6 +14,30 @@
       display: flex; align-items: center; justify-content: center;
       padding: 20px;
     }
+    .proto-panel {
+      position: fixed; left: 16px; top: 50%; transform: translateY(-50%);
+      background: rgba(255,255,255,0.95); border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 8px; padding: 12px 12px 14px;
+      width: 152px; box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+      font-family: 'Open Sans', sans-serif; z-index: 2000;
+    }
+    .proto-panel-title {
+      font-size: 9px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: rgba(0,24,38,0.35);
+      margin-bottom: 10px;
+    }
+    .proto-field { margin-bottom: 0; }
+    .proto-field-label {
+      font-size: 10px; font-weight: 600; color: rgba(0,24,38,0.5);
+      display: block; margin-bottom: 4px;
+    }
+    .proto-select {
+      width: 100%; font-size: 11px; font-family: 'Open Sans', sans-serif;
+      color: #142125; background: white;
+      border: 1px solid #cdd6db; border-radius: 4px;
+      padding: 4px 6px; cursor: pointer; outline: none;
+    }
+    .proto-select:focus { border-color: #0394ce; }
 
     /* ── Modal ── */
     .modal {
@@ -103,6 +127,7 @@
       min-width: 16px; text-align: center; white-space: nowrap;
     }
     .sidebar-toggle-badge.all-done { background: #3B6D11; }
+    .sidebar-toggle-badge.proto-zero { background: rgba(0,24,38,0.12); color: rgba(0,24,38,0.38); }
     /* Collapsed: button expands to fill the full strip, stacks badge above chevron */
     .sidebar.collapsed .sidebar-toggle {
       inset: 0; width: auto; height: auto; border-radius: 0;
@@ -515,6 +540,24 @@
 </head>
 <body>
 
+<div class="proto-panel">
+  <div class="proto-panel-title">Prototype Controls</div>
+  <div class="proto-field" style="margin-bottom:8px;">
+    <label class="proto-field-label">Version</label>
+    <select class="proto-select">
+      <option value="v1">First Draft</option>
+    </select>
+  </div>
+  <div class="proto-field">
+    <label class="proto-field-label">Data</label>
+    <select class="proto-select" onchange="setProtoState(this.value)">
+      <option value="default">Average Med Count</option>
+      <option value="empty">Empty State</option>
+      <option value="complex">Complex 10+ Meds</option>
+    </select>
+  </div>
+</div>
+
 <div class="modal" id="main-modal">
 
   <!-- Dialog header -->
@@ -570,14 +613,6 @@
             <div class="sidebar-item-status" id="si-status-fill-lisinopril"></div>
             <div class="sidebar-item-detail" id="si-detail-fill-lisinopril"></div>
           </div>
-          <div class="sidebar-item" id="si-fill-metformin" onclick="selectItem('fill-metformin')">
-            <div class="sidebar-item-name-row">
-              <div class="sidebar-item-name">Metformin ER 500 mg</div>
-            </div>
-            <div class="sidebar-item-meta">Walgreens · 04/28/20</div>
-            <div class="sidebar-item-status" id="si-status-fill-metformin"></div>
-            <div class="sidebar-item-detail" id="si-detail-fill-metformin"></div>
-          </div>
         </div>
 
         <!-- Section card: Pharmacy fills (existing meds) -->
@@ -585,14 +620,6 @@
           <div class="sc-card-hd">
             <span class="sc-card-label">Pharmacy fills</span>
             <button class="sc-bulk-btn" id="bulk-btn-fill-existing" onclick="bulkResolveSection('fill-existing','signed-off')">Sign Off All</button>
-          </div>
-          <div class="sidebar-item" id="si-fill-existing-aspirin" onclick="selectItem('fill-existing-aspirin')">
-            <div class="sidebar-item-name-row">
-              <div class="sidebar-item-name">Aspirin 81 mg Tab</div>
-            </div>
-            <div class="sidebar-item-meta">CVS Pharmacy · 05/02/20</div>
-            <div class="sidebar-item-status" id="si-status-fill-existing-aspirin"></div>
-            <div class="sidebar-item-detail" id="si-detail-fill-existing-aspirin"></div>
           </div>
           <div class="sidebar-item" id="si-fill-existing-levothyroxine" onclick="selectItem('fill-existing-levothyroxine')">
             <div class="sidebar-item-name-row">
@@ -613,14 +640,6 @@
             </span>
             <button class="sc-bulk-btn" id="bulk-btn-lnt" onclick="bulkResolveSection('likely-not-taking','discontinued')">Discontinue All</button>
           </div>
-          <div class="sidebar-item" id="si-lnt-amoxicillin" onclick="selectItem('lnt-amoxicillin')">
-            <div class="sidebar-item-name-row">
-              <div class="sidebar-item-name">Amoxicillin 250 mg</div>
-            </div>
-            <div class="sidebar-item-meta">No refill since 05/24/20</div>
-            <div class="sidebar-item-status" id="si-status-lnt-amoxicillin"></div>
-            <div class="sidebar-item-detail" id="si-detail-lnt-amoxicillin"></div>
-          </div>
           <div class="sidebar-item" id="si-lnt-sertraline" onclick="selectItem('lnt-sertraline')">
             <div class="sidebar-item-name-row">
               <div class="sidebar-item-name">Sertraline 50 mg</div>
@@ -636,14 +655,6 @@
           <div class="sc-card-hd">
             <span class="sc-card-label">Possible duplicates</span>
             <button class="sc-bulk-btn" id="bulk-btn-dup" onclick="bulkResolveSection('duplicate','merged')">Merge All</button>
-          </div>
-          <div class="sidebar-item" id="si-dup-famotidine" onclick="selectItem('dup-famotidine')">
-            <div class="sidebar-item-name-row">
-              <div class="sidebar-item-name">Famotidine · Pepcid</div>
-            </div>
-            <div class="sidebar-item-meta">Redundant entries</div>
-            <div class="sidebar-item-status" id="si-status-dup-famotidine"></div>
-            <div class="sidebar-item-detail" id="si-detail-dup-famotidine"></div>
           </div>
           <div class="sidebar-item" id="si-dup-omeprazole" onclick="selectItem('dup-omeprazole')">
             <div class="sidebar-item-name-row">
@@ -680,6 +691,12 @@
             </div>
             <div class="sidebar-item-detail" id="si-detail-auto-metoprolol"></div>
           </div>
+        </div>
+
+        <div id="sidebar-empty-msg" style="display:none;flex-direction:column;align-items:center;padding:32px 16px 0;text-align:center;">
+          <div style="font-size:22px;margin-bottom:8px;">✓</div>
+          <div style="font-size:12px;font-weight:600;color:#142125;margin-bottom:4px;">Nothing to review</div>
+          <div style="font-size:11px;color:rgba(0,24,38,0.45);line-height:1.5;">No new pharmacy data or flags since the last reconciliation.</div>
         </div>
 
       </div><!-- /sidebar-list -->
@@ -762,45 +779,6 @@
           <div class="nested-rows" id="nested-albuterol"></div>
         </div>
 
-        <!-- ── Row 2: Amoxicillin ── -->
-        <div class="med-card" id="card-amoxicillin">
-          <div class="med-card-content">
-            <div class="chevron-wrap" onclick="toggleRow('amoxicillin')">
-              <div class="chevron" id="chev-amoxicillin"></div>
-              <input type="checkbox" class="merge-cb" onclick="event.stopPropagation()" onchange="updateMergeBanner()">
-            </div>
-            <div class="date-col">05/24/20</div>
-            <div class="med-info">
-              <div class="med-name">
-                Amoxicillin 250 mg Cap
-                <span class="badge badge-info" id="badge-lnt-amoxicillin">Flagged for Review</span>
-              </div>
-              <div class="med-sig">Take one tablet by mouth every 8 hours until complete</div>
-              <div class="add-note-hint">
-                <svg class="paper-icon" viewBox="0 0 16 16" fill="none"><path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="#8398a0" stroke-width="1.1" stroke-linejoin="round"/><path d="M10 2v4h4" stroke="#8398a0" stroke-width="1.1" stroke-linejoin="round"/><path d="M5 8h6M5 10.5h4" stroke="#8398a0" stroke-width="1" stroke-linecap="round"/></svg>
-                <span>Add note...</span>
-              </div>
-              <div class="med-ai-insight">Pt has not refilled this med since 05/24/20.</div>
-            </div>
-            <div class="row-actions">
-              <button class="btn-sm-default dc-btn" onclick="toggleDC('amoxicillin')">D/C</button>
-              <button class="btn-sm-default" onclick="openActionsMenu(event,'amoxicillin')">Actions</button>
-            </div>
-          </div>
-          <div class="dc-options">
-            <div style="font-size:11px;color:rgba(0,24,38,0.58);margin-bottom:3px;">Reason for D/C</div>
-            <div class="seg-radio">
-              <button class="seg-radio-btn selected" onclick="selectDCReason(this)">Patient D/C</button>
-              <button class="seg-radio-btn" onclick="selectDCReason(this)">Complete</button>
-              <button class="seg-radio-btn" onclick="selectDCReason(this)">Internal D/C</button>
-              <button class="seg-radio-btn" onclick="selectDCReason(this)">External D/C</button>
-            </div>
-            <div class="dc-divider"></div>
-            <label class="dc-checkbox-row"><input type="checkbox"> Send cancellation request</label>
-          </div>
-          <div class="nested-rows" id="nested-amoxicillin"></div>
-        </div>
-
         <!-- ── Row: Aspirin ── -->
         <div class="med-card" id="card-aspirin">
           <div class="med-card-content">
@@ -812,7 +790,6 @@
             <div class="med-info">
               <div class="med-name">Aspirin 81 mg Tab</div>
               <div class="med-sig">Take one tablet by mouth once daily</div>
-              <div class="med-annotation" id="ann-fill-existing-aspirin" style="display:none;"></div>
             </div>
             <div class="row-actions">
               <button class="btn-sm-default dc-btn" onclick="toggleDC('aspirin')">D/C</button>
@@ -830,17 +807,7 @@
             <div class="dc-divider"></div>
             <label class="dc-checkbox-row"><input type="checkbox"> Send cancellation request</label>
           </div>
-          <div class="nested-rows" id="nested-aspirin">
-            <div class="nested-timeline-label"><span>Fills</span></div>
-            <div class="nested-row" style="padding-bottom:4px;">
-              <div style="width:20px;flex-shrink:0;opacity:0;"></div>
-              <div class="nested-date">05/02/20</div>
-              <div class="nested-med">
-                <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;"><span class="badge badge-fill">Fill</span><span class="nested-med-name"><strong>Aspirin 81 mg</strong> · 1 tab daily</span><span class="badge badge-pending">Pending Sign Off</span></div>
-                <div class="nested-med-sig" style="color:rgba(0,24,38,0.45);">CVS Pharmacy · Dr. L. Park</div>
-              </div>
-            </div>
-          </div>
+          <div class="nested-rows" id="nested-aspirin"></div>
         </div>
 
         <!-- ── Row: Atorvastatin ── -->
@@ -947,44 +914,6 @@
           <div class="nested-rows" id="nested-dextro"></div>
         </div>
 
-        <!-- ── Row: Famotidine ── -->
-        <div class="med-card" id="card-famotidine">
-          <div class="med-card-content">
-            <div class="chevron-wrap" onclick="toggleRow('famotidine')">
-              <div class="chevron" id="chev-famotidine"></div>
-              <input type="checkbox" class="merge-cb" onclick="event.stopPropagation()" onchange="updateMergeBanner()">
-            </div>
-            <div class="date-col">05/24/20</div>
-            <div class="med-info">
-              <div class="med-name">
-                Famotidine 20 mg Tab
-                <span class="badge" id="badge-dup-famotidine" style="background:#dbebff;color:#07479d;">Possible Duplicate</span>
-              </div>
-              <div class="med-sig">One to two tablets by mouth twice daily</div>
-              <div class="add-note-hint">
-                <svg class="paper-icon" viewBox="0 0 16 16" fill="none"><path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="#8398a0" stroke-width="1.1" stroke-linejoin="round"/><path d="M10 2v4h4" stroke="#8398a0" stroke-width="1.1" stroke-linejoin="round"/><path d="M5 8h6M5 10.5h4" stroke="#8398a0" stroke-width="1" stroke-linecap="round"/></svg>
-                <span>Add note...</span>
-              </div>
-            </div>
-            <div class="row-actions">
-              <button class="btn-sm-default dc-btn" onclick="toggleDC('famotidine')">D/C</button>
-              <button class="btn-sm-default" onclick="openActionsMenu(event,'famotidine')">Actions</button>
-            </div>
-          </div>
-          <div class="dc-options">
-            <div style="font-size:11px;color:rgba(0,24,38,0.58);margin-bottom:3px;">Reason for D/C</div>
-            <div class="seg-radio">
-              <button class="seg-radio-btn selected" onclick="selectDCReason(this)">Patient D/C</button>
-              <button class="seg-radio-btn" onclick="selectDCReason(this)">Complete</button>
-              <button class="seg-radio-btn" onclick="selectDCReason(this)">Internal D/C</button>
-              <button class="seg-radio-btn" onclick="selectDCReason(this)">External D/C</button>
-            </div>
-            <div class="dc-divider"></div>
-            <label class="dc-checkbox-row"><input type="checkbox"> Send cancellation request</label>
-          </div>
-          <div class="nested-rows" id="nested-famotidine"></div>
-        </div>
-
         <!-- ── Row: Levothyroxine ── -->
         <div class="med-card" id="card-levothyroxine">
           <div class="med-card-content">
@@ -1036,20 +965,6 @@
               <div class="med-name">Lisinopril 10 mg <span class="badge badge-pending">Pending Sign Off</span></div>
               <div class="med-sig">Take one tablet by mouth once daily</div>
               <div class="med-annotation">CVS Pharmacy · Dr. M. Rivera</div>
-            </div>
-            <div class="row-actions" style="visibility:hidden;"></div>
-          </div>
-        </div>
-
-        <!-- Ghost row: Metformin ER pending fill -->
-        <div class="med-card ghost-row" id="card-ghost-metformin">
-          <div class="med-card-content">
-            <div class="chevron-wrap" style="visibility:hidden;"><div class="chevron"></div></div>
-            <div class="date-col">04/28/20</div>
-            <div class="med-info">
-              <div class="med-name">Metformin ER 500 mg <span class="badge badge-pending">Pending Sign Off</span></div>
-              <div class="med-sig">Take one tablet by mouth twice daily with meals</div>
-              <div class="med-annotation">Walgreens · Dr. T. Nguyen</div>
             </div>
             <div class="row-actions" style="visibility:hidden;"></div>
           </div>
@@ -1223,19 +1138,6 @@
       meta: { pharmacy: 'CVS Pharmacy', fillDate: '05/01/20', prescriber: 'Dr. M. Rivera' }
     },
     {
-      id: 'fill-metformin', type: 'fill', state: 'pending', resolution: null,
-      name: 'Metformin ER 500 mg', sig: 'Take one tablet by mouth twice daily with meals',
-      meta: { pharmacy: 'Walgreens', fillDate: '04/28/20', prescriber: 'Dr. T. Nguyen' }
-    },
-    {
-      id: 'fill-existing-aspirin', type: 'fill-existing', state: 'pending', resolution: null,
-      name: 'Aspirin 81 mg Tab', originalName: 'Aspirin 81 mg Tab',
-      medId: 'aspirin', sig: 'Take one tablet by mouth once daily',
-      discrepancy: null, pendingAnnotation: null,
-      meta: { pharmacy: 'CVS Pharmacy', fillDate: '05/02/20', prescriber: 'Dr. L. Park', daysSupply: '30' },
-      onFile: { dose: '81 mg', sig: 'Take one tablet by mouth once daily', prescriber: 'Dr. L. Park' }
-    },
-    {
       id: 'fill-existing-levothyroxine', type: 'fill-existing', state: 'pending', resolution: null,
       name: 'Levothyroxine 75 mcg Tab', originalName: 'Levothyroxine 50 mcg Tab',
       medId: 'levothyroxine', sig: 'Take one tablet by mouth once daily in the morning',
@@ -1245,23 +1147,9 @@
       onFile: { dose: '50 mcg', sig: 'Take one tablet by mouth once daily in the morning', prescriber: 'Dr. T. Nguyen' }
     },
     {
-      id: 'lnt-amoxicillin', type: 'likely-not-taking', state: 'pending', resolution: null,
-      name: 'Amoxicillin 250 mg Cap', sig: 'Take one tablet by mouth every 8 hours until complete',
-      meta: { reason: 'No pharmacy refill since 05/24/20' }, medId: 'amoxicillin'
-    },
-    {
       id: 'lnt-sertraline', type: 'likely-not-taking', state: 'pending', resolution: null,
       name: 'Sertraline 50 mg Tab', sig: 'Take one tablet by mouth once daily in the morning',
       meta: { reason: 'No pharmacy refill since 03/15/20' }, medId: 'sertraline'
-    },
-    {
-      id: 'dup-famotidine', type: 'duplicate', state: 'pending', resolution: null,
-      name: 'Famotidine · Pepcid',
-      names: ['Famotidine 20 mg Tab', 'Pepcid 20 mg Tab'],
-      sigs: ['One to two tablets by mouth twice daily', 'One to two tablets by mouth twice daily'],
-      meta: { reason: 'Redundant entries for the same treatment',
-              dates: ['05/24/20', '04/10/20'], providers: ['Dr. K. Smith', 'Dr. L. Jones'] },
-      medId: 'famotidine'
     },
     {
       id: 'dup-omeprazole', type: 'duplicate', state: 'pending', resolution: null,
@@ -1289,15 +1177,11 @@
   let activeItemId = 'fill-lisinopril';
 
   const MED_ROW_MAP = {
-    'fill-lisinopril':   ['card-ghost-lisinopril'],
-    'fill-metformin':    ['card-ghost-metformin'],
-    'lnt-amoxicillin':   ['card-amoxicillin'],
-    'lnt-sertraline':    ['card-sertraline'],
-    'dup-famotidine':    ['card-famotidine'],
-    'dup-omeprazole':    ['card-omeprazole'],
-    'auto-atorvastatin': ['card-atorvastatin'],
-    'auto-metoprolol':          ['card-metoprolol'],
-    'fill-existing-aspirin':    ['card-aspirin'],
+    'fill-lisinopril':             ['card-ghost-lisinopril'],
+    'lnt-sertraline':              ['card-sertraline'],
+    'dup-omeprazole':              ['card-omeprazole'],
+    'auto-atorvastatin':           ['card-atorvastatin'],
+    'auto-metoprolol':             ['card-metoprolol'],
     'fill-existing-levothyroxine': ['card-levothyroxine']
   };
 
@@ -1361,6 +1245,7 @@
     });
     updateCounts();
     updateFooterStatus();
+    updateFooterBtn();
     setTimeout(() => {
       const next = changelog.find(i => i.state === 'pending');
       if (next) {
@@ -1384,6 +1269,7 @@
     updateSidebarItem(id);
     updateCounts();
     updateFooterStatus();
+    updateFooterBtn();
     renderSidebarDetail(id);
     setTimeout(() => {
       const next = changelog.find(i => i.state === 'pending');
@@ -1414,6 +1300,7 @@
     updateSidebarItem(id);
     updateCounts();
     updateFooterStatus();
+    updateFooterBtn();
     highlightMedRows(id);
     renderSidebarDetail(id);
   }
@@ -1606,8 +1493,7 @@
   }
 
   const GHOST_INSERT_ANCHORS = {
-    'lisinopril': ['card-ghost-metformin', 'card-metoprolol'],
-    'metformin':  ['card-metoprolol']
+    'lisinopril': ['card-metoprolol']
   };
 
   function restoreGhostRow(item) {
@@ -1742,17 +1628,18 @@
       if (btn) btn.style.display = changelog.some(i => i.type === type && i.state === 'pending') ? '' : 'none';
     });
     const toggleBadge = document.getElementById('sidebar-toggle-badge');
-    if (toggleBadge) {
+    if (toggleBadge && !_protoEmpty) {
       if (total === 0) {
         toggleBadge.setAttribute('data-empty', '');
       } else if (pendingCount === 0) {
         toggleBadge.removeAttribute('data-empty');
         toggleBadge.textContent = '✓';
         toggleBadge.classList.add('all-done');
+        toggleBadge.classList.remove('proto-zero');
       } else {
         toggleBadge.removeAttribute('data-empty');
         toggleBadge.textContent = pendingCount;
-        toggleBadge.classList.remove('all-done');
+        toggleBadge.classList.remove('all-done', 'proto-zero');
       }
     }
   }
@@ -1894,7 +1781,8 @@
     if (modal.classList.contains('merge-mode')) {
       btn.textContent = 'Confirm Medications List';
     } else {
-      btn.textContent = dcCount > 0 ? 'Save Changes to Medications' : 'Confirm Medication List';
+      const anyResolved = changelog.some(i => i.type !== 'auto-merged' && i.state === 'resolved');
+      btn.textContent = dcCount > 0 ? 'Save Changes to Medications' : anyResolved ? 'Update Medication List' : 'Confirm Medication List';
     }
   }
 
@@ -2007,8 +1895,679 @@
     if (status) { status.textContent = 'Clinical profile updated'; status.classList.add('all-done'); }
   }
 
+  /* ── Prototype state switcher ── */
+  let _baseScenario = 'default';
+  let _savedDefaults = null;
+
+  function _applyEmptyState(on) {
+    _protoEmpty = on;
+    const emptyMsg   = document.getElementById('sidebar-empty-msg');
+    const badge      = document.getElementById('nr-badge');
+    const subtitle   = document.querySelector('.sidebar-hd .sidebar-subtitle');
+    const footer     = document.querySelector('.sidebar-ft');
+    const toggleBadge = document.getElementById('sidebar-toggle-badge');
+    if (on) {
+      document.querySelectorAll('#sidebar-list .sc-card').forEach(c => c.style.display = 'none');
+      emptyMsg.style.display = 'flex';
+      if (badge) { badge.textContent = '✓'; badge.classList.add('all-done'); }
+      if (subtitle) subtitle.textContent = 'Up to date · 04/15/20';
+      if (footer) footer.style.display = 'none';
+      if (toggleBadge) {
+        toggleBadge.removeAttribute('data-empty');
+        toggleBadge.textContent = '0';
+        toggleBadge.classList.remove('all-done');
+        toggleBadge.classList.add('proto-zero');
+      }
+    } else {
+      document.querySelectorAll('#sidebar-list .sc-card').forEach(c => c.style.display = '');
+      emptyMsg.style.display = 'none';
+      if (subtitle) subtitle.textContent = 'Since last reconciliation · 04/15/20';
+      if (footer) footer.style.display = '';
+      if (toggleBadge) toggleBadge.classList.remove('proto-zero');
+      updateCounts();
+    }
+  }
+
+  function setProtoState(value) {
+    // If currently on complex, restore default first before empty or default
+    if (_baseScenario === 'complex' && value !== 'complex') {
+      _baseScenario = 'default';
+      restoreDefaultScenario();
+    }
+    if (value === 'complex') {
+      if (_baseScenario !== 'complex') {
+        if (!_savedDefaults) saveDefaultScenario();
+        _baseScenario = 'complex';
+        loadComplexScenario();
+      }
+      return;
+    }
+    _applyEmptyState(value === 'empty');
+  }
+
+  /* ══════════════════════════════════════════════════
+     SCENARIO SWITCHING
+  ══════════════════════════════════════════════════ */
+  function _resetScenarioUI(firstItemId) {
+    dcCount = 0;
+    _sortCol = null; _sortDir = 'asc';
+    ['date','name'].forEach(c => {
+      const hdr = document.getElementById('col-hdr-' + c);
+      const arrow = document.getElementById('sort-arrow-' + c);
+      if (hdr) hdr.classList.remove('sort-active');
+      if (arrow) arrow.textContent = '';
+    });
+    document.getElementById('all-done-banner').classList.remove('visible');
+    const fpb = document.getElementById('footer-primary-btn');
+    fpb.disabled = false;
+    document.querySelector('.modal-body').removeEventListener('click', _medCardClickHandler);
+    document.querySelector('.modal-body').addEventListener('click', _medCardClickHandler);
+    _attachTooltips();
+    activeItemId = firstItemId;
+    selectItem(activeItemId);
+    updateCounts();
+    updateFooterStatus();
+    updateFooterBtn();
+  }
+
+  function saveDefaultScenario() {
+    const sidebarList = document.getElementById('sidebar-list');
+    const modalBody = document.querySelector('.modal-body');
+    _savedDefaults = {
+      sidebarHTML: [...sidebarList.querySelectorAll('.sc-card')].map(c => c.outerHTML).join(''),
+      medHTML: [...modalBody.querySelectorAll('.med-card')].map(c => c.outerHTML).join(''),
+      changelogItems: JSON.parse(JSON.stringify(changelog)),
+      medRowMap: Object.entries(MED_ROW_MAP).map(([k,v]) => [k, [...v]]),
+      ghostAnchors: Object.entries(GHOST_INSERT_ANCHORS).map(([k,v]) => [k, [...v]])
+    };
+  }
+
+  function _swapDOM(sidebarHTML, medHTML) {
+    const sidebarList = document.getElementById('sidebar-list');
+    const modalBody = document.querySelector('.modal-body');
+    const emptyMsg = document.getElementById('sidebar-empty-msg');
+    const mergeBanner = modalBody.querySelector('.merge-banner');
+    sidebarList.querySelectorAll('.sc-card').forEach(c => c.remove());
+    const tmp = document.createElement('div');
+    tmp.innerHTML = sidebarHTML;
+    while (tmp.firstChild) sidebarList.insertBefore(tmp.firstChild, emptyMsg);
+    while (modalBody.lastChild !== mergeBanner) modalBody.removeChild(modalBody.lastChild);
+    tmp.innerHTML = medHTML;
+    while (tmp.firstChild) modalBody.appendChild(tmp.firstChild);
+  }
+
+  function restoreDefaultScenario() {
+    if (!_savedDefaults) return;
+    _swapDOM(_savedDefaults.sidebarHTML, _savedDefaults.medHTML);
+    changelog.splice(0, changelog.length, ..._savedDefaults.changelogItems);
+    Object.keys(MED_ROW_MAP).forEach(k => delete MED_ROW_MAP[k]);
+    Object.assign(MED_ROW_MAP, Object.fromEntries(_savedDefaults.medRowMap));
+    Object.keys(GHOST_INSERT_ANCHORS).forEach(k => delete GHOST_INSERT_ANCHORS[k]);
+    Object.assign(GHOST_INSERT_ANCHORS, Object.fromEntries(_savedDefaults.ghostAnchors));
+    _savedDefaults = null;
+    _protoEmpty = false;
+    document.getElementById('sidebar-empty-msg').style.display = 'none';
+    document.querySelector('.sidebar-ft').style.display = '';
+    _resetScenarioUI('fill-lisinopril');
+  }
+
+  /* ── Complex scenario data ── */
+  const _complexChangelog = [
+    { id:'fill-jardiance', type:'fill', state:'pending', resolution:null,
+      name:'Jardiance 10 mg', sig:'Take one tablet by mouth once daily',
+      meta:{ pharmacy:'CVS Pharmacy', fillDate:'05/03/20', prescriber:'Dr. T. Nguyen' } },
+    { id:'fill-amlodipine', type:'fill', state:'pending', resolution:null,
+      name:'Amlodipine 5 mg', sig:'Take one tablet by mouth once daily',
+      meta:{ pharmacy:'Walgreens', fillDate:'04/29/20', prescriber:'Dr. M. Rivera' } },
+    { id:'fill-pantoprazole', type:'fill', state:'pending', resolution:null,
+      name:'Pantoprazole 40 mg', sig:'Take one tablet by mouth once daily before a meal',
+      meta:{ pharmacy:'CVS Pharmacy', fillDate:'04/22/20', prescriber:'Dr. L. Park' } },
+    { id:'fill-spironolactone', type:'fill', state:'pending', resolution:null,
+      name:'Spironolactone 25 mg', sig:'Take one tablet by mouth once daily',
+      meta:{ pharmacy:'Walgreens', fillDate:'04/12/20', prescriber:'Dr. M. Rivera' } },
+    { id:'fill-existing-metformin-cx', type:'fill-existing', state:'pending', resolution:null,
+      name:'Metformin ER 1000 mg', originalName:'Metformin ER 500 mg',
+      medId:'cx-metformin', sig:'Take one tablet by mouth twice daily with meals',
+      discrepancy:{ type:'Dose change', description:'500 mg on file from 03/12/20 — this fill is for 1000 mg' },
+      pendingAnnotation:'Filled at 1000 mg on 04/18/20 — review needed',
+      meta:{ pharmacy:'Walgreens', fillDate:'04/18/20', prescriber:'Dr. M. Rivera', daysSupply:'30' },
+      onFile:{ dose:'500 mg', sig:'Take one tablet by mouth twice daily with meals', prescriber:'Dr. M. Rivera' } },
+    { id:'fill-existing-lisinopril-cx', type:'fill-existing', state:'pending', resolution:null,
+      name:'Lisinopril 20 mg', originalName:'Lisinopril 10 mg',
+      medId:'cx-lisinopril', sig:'Take one tablet by mouth once daily',
+      discrepancy:{ type:'Dose change', description:'10 mg on file from 02/20/20 — this fill is for 20 mg' },
+      pendingAnnotation:'Filled at 20 mg on 04/30/20 — review needed',
+      meta:{ pharmacy:'CVS Pharmacy', fillDate:'04/30/20', prescriber:'Dr. T. Nguyen', daysSupply:'30' },
+      onFile:{ dose:'10 mg', sig:'Take one tablet by mouth once daily', prescriber:'Dr. T. Nguyen' } },
+    { id:'lnt-clopidogrel', type:'likely-not-taking', state:'pending', resolution:null,
+      name:'Clopidogrel 75 mg Tab', sig:'Take one tablet by mouth once daily',
+      meta:{ reason:'No pharmacy refill since 07/20/19' }, medId:'cx-clopidogrel' },
+    { id:'lnt-glipizide', type:'likely-not-taking', state:'pending', resolution:null,
+      name:'Glipizide 5 mg Tab', sig:'Take one tablet by mouth twice daily before meals',
+      meta:{ reason:'No pharmacy refill since 08/15/19' }, medId:'cx-glipizide' },
+    { id:'lnt-warfarin', type:'likely-not-taking', state:'pending', resolution:null,
+      name:'Warfarin 5 mg Tab', sig:'Take one tablet by mouth once daily',
+      meta:{ reason:'No pharmacy refill since 06/03/19' }, medId:'cx-warfarin' },
+    { id:'lnt-hctz', type:'likely-not-taking', state:'pending', resolution:null,
+      name:'Hydrochlorothiazide 25 mg Tab', sig:'Take one tablet by mouth once daily in the morning',
+      meta:{ reason:'No pharmacy refill since 09/10/19' }, medId:'cx-hctz' },
+    { id:'dup-metoprolol-cx', type:'duplicate', state:'pending', resolution:null,
+      name:'Metoprolol · Lopressor',
+      names:['Metoprolol Tartrate 50 mg','Lopressor 50 mg Tab'],
+      sigs:['Take one tablet by mouth twice daily','Take one tablet by mouth twice daily'],
+      meta:{ reason:'Redundant entries for the same treatment',
+             dates:['05/01/20','03/15/20'], providers:['Dr. K. Smith','Dr. T. Nguyen'] },
+      medId:'cx-metoprolol' },
+    { id:'dup-ranitidine-cx', type:'duplicate', state:'pending', resolution:null,
+      name:'Ranitidine · Zantac',
+      names:['Ranitidine 150 mg Tab','Zantac 150 mg Tab'],
+      sigs:['Take one tablet by mouth twice daily','Take one tablet by mouth twice daily'],
+      meta:{ reason:'Redundant entries for the same treatment',
+             dates:['04/10/20','02/28/20'], providers:['Dr. L. Park','Dr. K. Smith'] },
+      medId:'cx-ranitidine' },
+    { id:'auto-atorvastatin-cx', type:'auto-merged', state:'resolved', resolution:null,
+      name:'Atorvastatin 40 mg', sig:'Take one tablet by mouth once daily at bedtime',
+      meta:{ mergeReason:'Identical med, dose, sig — scripts to two pharmacies' },
+      medId:'cx-atorvastatin' },
+    { id:'auto-levothyroxine-cx', type:'auto-merged', state:'resolved', resolution:null,
+      name:'Levothyroxine 75 mcg', sig:'Take one tablet by mouth once daily in the morning',
+      meta:{ mergeReason:'Identical med, dose, sig — scripts to two pharmacies' },
+      medId:'cx-levothyroxine' }
+  ];
+
+  const _complexMedRowMap = {
+    'fill-jardiance':             ['card-ghost-jardiance'],
+    'fill-amlodipine':            ['card-ghost-amlodipine'],
+    'fill-pantoprazole':          ['card-ghost-pantoprazole'],
+    'fill-spironolactone':        ['card-ghost-spironolactone'],
+    'lnt-clopidogrel':            ['card-cx-clopidogrel'],
+    'fill-existing-metformin-cx': ['card-cx-metformin'],
+    'fill-existing-lisinopril-cx':['card-cx-lisinopril'],
+    'lnt-glipizide':              ['card-cx-glipizide'],
+    'lnt-warfarin':               ['card-cx-warfarin'],
+    'lnt-hctz':                   ['card-cx-hctz'],
+    'dup-metoprolol-cx':          ['card-cx-metoprolol'],
+    'dup-ranitidine-cx':          ['card-cx-ranitidine'],
+    'auto-atorvastatin-cx':       ['card-cx-atorvastatin'],
+    'auto-levothyroxine-cx':      ['card-cx-levothyroxine']
+  };
+
+  const _complexGhostAnchors = {
+    'amlodipine':  ['card-cx-aspirin', 'card-cx-atorvastatin'],
+    'jardiance':   ['card-cx-levothyroxine', 'card-cx-lisinopril'],
+    'pantoprazole':    ['card-cx-ranitidine', 'card-cx-warfarin'],
+    'spironolactone':  ['card-cx-warfarin']
+  };
+
+  function _complexSidebarHTML() { return `
+    <div class="sc-card">
+      <div class="sc-card-hd">
+        <span class="sc-card-label">Not Previously in Chart</span>
+        <button class="sc-bulk-btn" id="bulk-btn-fill" onclick="bulkResolveSection('fill','added')">Sign Off All</button>
+      </div>
+      <div class="sidebar-item active" id="si-fill-jardiance" onclick="selectItem('fill-jardiance')">
+        <div class="sidebar-item-name-row"><div class="sidebar-item-name">Jardiance 10 mg</div></div>
+        <div class="sidebar-item-meta">CVS Pharmacy · 05/03/20</div>
+        <div class="sidebar-item-status" id="si-status-fill-jardiance"></div>
+        <div class="sidebar-item-detail" id="si-detail-fill-jardiance"></div>
+      </div>
+      <div class="sidebar-item" id="si-fill-amlodipine" onclick="selectItem('fill-amlodipine')">
+        <div class="sidebar-item-name-row"><div class="sidebar-item-name">Amlodipine 5 mg</div></div>
+        <div class="sidebar-item-meta">Walgreens · 04/29/20</div>
+        <div class="sidebar-item-status" id="si-status-fill-amlodipine"></div>
+        <div class="sidebar-item-detail" id="si-detail-fill-amlodipine"></div>
+      </div>
+      <div class="sidebar-item" id="si-fill-pantoprazole" onclick="selectItem('fill-pantoprazole')">
+        <div class="sidebar-item-name-row"><div class="sidebar-item-name">Pantoprazole 40 mg</div></div>
+        <div class="sidebar-item-meta">CVS Pharmacy · 04/22/20</div>
+        <div class="sidebar-item-status" id="si-status-fill-pantoprazole"></div>
+        <div class="sidebar-item-detail" id="si-detail-fill-pantoprazole"></div>
+      </div>
+      <div class="sidebar-item" id="si-fill-spironolactone" onclick="selectItem('fill-spironolactone')">
+        <div class="sidebar-item-name-row"><div class="sidebar-item-name">Spironolactone 25 mg</div></div>
+        <div class="sidebar-item-meta">Walgreens · 04/12/20</div>
+        <div class="sidebar-item-status" id="si-status-fill-spironolactone"></div>
+        <div class="sidebar-item-detail" id="si-detail-fill-spironolactone"></div>
+      </div>
+    </div>
+    <div class="sc-card" id="sc-card-fill-existing">
+      <div class="sc-card-hd">
+        <span class="sc-card-label">Pharmacy fills</span>
+        <button class="sc-bulk-btn" id="bulk-btn-fill-existing" onclick="bulkResolveSection('fill-existing','signed-off')">Sign Off All</button>
+      </div>
+      <div class="sidebar-item" id="si-fill-existing-metformin-cx" onclick="selectItem('fill-existing-metformin-cx')">
+        <div class="sidebar-item-name-row"><div class="sidebar-item-name">Metformin ER 500 mg</div></div>
+        <div class="sidebar-item-meta">Walgreens · 04/18/20</div>
+        <div class="sidebar-item-status" id="si-status-fill-existing-metformin-cx"></div>
+        <div class="sidebar-item-detail" id="si-detail-fill-existing-metformin-cx"></div>
+      </div>
+      <div class="sidebar-item" id="si-fill-existing-lisinopril-cx" onclick="selectItem('fill-existing-lisinopril-cx')">
+        <div class="sidebar-item-name-row"><div class="sidebar-item-name">Lisinopril 10 mg</div></div>
+        <div class="sidebar-item-meta">CVS Pharmacy · 04/30/20</div>
+        <div class="sidebar-item-status" id="si-status-fill-existing-lisinopril-cx"></div>
+        <div class="sidebar-item-detail" id="si-detail-fill-existing-lisinopril-cx"></div>
+      </div>
+    </div>
+    <div class="sc-card">
+      <div class="sc-card-hd">
+        <span style="display:inline-flex;align-items:center;gap:5px;">
+          <span class="sc-card-label">Flagged for Review</span>
+          <span class="sc-info-tip" data-tip="Items are flagged using pharmacy fill history, patient-reported adherence, and medication data such as dosing patterns and refill gaps.">i</span>
+        </span>
+        <button class="sc-bulk-btn" id="bulk-btn-lnt" onclick="bulkResolveSection('likely-not-taking','discontinued')">Discontinue All</button>
+      </div>
+      <div class="sidebar-item" id="si-lnt-clopidogrel" onclick="selectItem('lnt-clopidogrel')">
+        <div class="sidebar-item-name-row"><div class="sidebar-item-name">Clopidogrel 75 mg</div></div>
+        <div class="sidebar-item-meta">No refill since 07/20/19</div>
+        <div class="sidebar-item-status" id="si-status-lnt-clopidogrel"></div>
+        <div class="sidebar-item-detail" id="si-detail-lnt-clopidogrel"></div>
+      </div>
+      <div class="sidebar-item" id="si-lnt-glipizide" onclick="selectItem('lnt-glipizide')">
+        <div class="sidebar-item-name-row"><div class="sidebar-item-name">Glipizide 5 mg</div></div>
+        <div class="sidebar-item-meta">No refill since 08/15/19</div>
+        <div class="sidebar-item-status" id="si-status-lnt-glipizide"></div>
+        <div class="sidebar-item-detail" id="si-detail-lnt-glipizide"></div>
+      </div>
+      <div class="sidebar-item" id="si-lnt-warfarin" onclick="selectItem('lnt-warfarin')">
+        <div class="sidebar-item-name-row"><div class="sidebar-item-name">Warfarin 5 mg</div></div>
+        <div class="sidebar-item-meta">No refill since 06/03/19</div>
+        <div class="sidebar-item-status" id="si-status-lnt-warfarin"></div>
+        <div class="sidebar-item-detail" id="si-detail-lnt-warfarin"></div>
+      </div>
+      <div class="sidebar-item" id="si-lnt-hctz" onclick="selectItem('lnt-hctz')">
+        <div class="sidebar-item-name-row"><div class="sidebar-item-name">Hydrochlorothiazide 25 mg</div></div>
+        <div class="sidebar-item-meta">No refill since 09/10/19</div>
+        <div class="sidebar-item-status" id="si-status-lnt-hctz"></div>
+        <div class="sidebar-item-detail" id="si-detail-lnt-hctz"></div>
+      </div>
+    </div>
+    <div class="sc-card">
+      <div class="sc-card-hd">
+        <span class="sc-card-label">Possible duplicates</span>
+        <button class="sc-bulk-btn" id="bulk-btn-dup" onclick="bulkResolveSection('duplicate','merged')">Merge All</button>
+      </div>
+      <div class="sidebar-item" id="si-dup-metoprolol-cx" onclick="selectItem('dup-metoprolol-cx')">
+        <div class="sidebar-item-name-row"><div class="sidebar-item-name">Metoprolol · Lopressor</div></div>
+        <div class="sidebar-item-meta">Redundant entries</div>
+        <div class="sidebar-item-status" id="si-status-dup-metoprolol-cx"></div>
+        <div class="sidebar-item-detail" id="si-detail-dup-metoprolol-cx"></div>
+      </div>
+      <div class="sidebar-item" id="si-dup-ranitidine-cx" onclick="selectItem('dup-ranitidine-cx')">
+        <div class="sidebar-item-name-row"><div class="sidebar-item-name">Ranitidine · Zantac</div></div>
+        <div class="sidebar-item-meta">Redundant entries</div>
+        <div class="sidebar-item-status" id="si-status-dup-ranitidine-cx"></div>
+        <div class="sidebar-item-detail" id="si-detail-dup-ranitidine-cx"></div>
+      </div>
+    </div>
+    <div class="sc-card sc-card-auto">
+      <div class="sc-card-hd">
+        <span class="sc-card-label">Auto-merged</span>
+      </div>
+      <div class="sidebar-item resolved" id="si-auto-atorvastatin-cx" onclick="selectItem('auto-atorvastatin-cx')">
+        <div class="sidebar-item-name-row"><div class="sidebar-item-name">Atorvastatin 40 mg</div></div>
+        <div class="sidebar-item-meta">Identical med, dose, sig</div>
+        <div class="sidebar-item-status" id="si-status-auto-atorvastatin-cx"><span class="s-auto">✓ Merged</span></div>
+        <div class="sidebar-item-detail" id="si-detail-auto-atorvastatin-cx"></div>
+      </div>
+      <div class="sidebar-item resolved" id="si-auto-levothyroxine-cx" onclick="selectItem('auto-levothyroxine-cx')">
+        <div class="sidebar-item-name-row"><div class="sidebar-item-name">Levothyroxine 75 mcg</div></div>
+        <div class="sidebar-item-meta">Identical med, dose, sig</div>
+        <div class="sidebar-item-status" id="si-status-auto-levothyroxine-cx"><span class="s-auto">✓ Merged</span></div>
+        <div class="sidebar-item-detail" id="si-detail-auto-levothyroxine-cx"></div>
+      </div>
+    </div>`; }
+
+  function _dcOptions() { return `
+    <div class="dc-options">
+      <div style="font-size:11px;color:rgba(0,24,38,0.58);margin-bottom:3px;">Reason for D/C</div>
+      <div class="seg-radio">
+        <button class="seg-radio-btn selected" onclick="selectDCReason(this)">Patient D/C</button>
+        <button class="seg-radio-btn" onclick="selectDCReason(this)">Complete</button>
+        <button class="seg-radio-btn" onclick="selectDCReason(this)">Internal D/C</button>
+        <button class="seg-radio-btn" onclick="selectDCReason(this)">External D/C</button>
+      </div>
+      <div class="dc-divider"></div>
+      <label class="dc-checkbox-row"><input type="checkbox"> Send cancellation request</label>
+    </div>`; }
+
+  function _paperIcon() { return `<svg class="paper-icon" viewBox="0 0 16 16" fill="none"><path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="#8398a0" stroke-width="1.1" stroke-linejoin="round"/><path d="M10 2v4h4" stroke="#8398a0" stroke-width="1.1" stroke-linejoin="round"/><path d="M5 8h6M5 10.5h4" stroke="#8398a0" stroke-width="1" stroke-linecap="round"/></svg>`; }
+
+  function _mergeCb() { return `<input type="checkbox" class="merge-cb" onclick="event.stopPropagation()" onchange="updateMergeBanner()">`; }
+
+  function _complexMedBodyHTML() { return `
+    <div class="med-card" id="card-cx-albuterol">
+      <div class="med-card-content">
+        <div class="chevron-wrap" onclick="toggleRow('cx-albuterol')"><div class="chevron" id="chev-cx-albuterol"></div>${_mergeCb()}</div>
+        <div class="date-col">04/10/20</div>
+        <div class="med-info">
+          <div class="med-name">Albuterol HFA 90 mcg Inhaler</div>
+          <div class="med-sig">One to two inhalations as needed every 4–6 hours</div>
+          <div class="add-note-hint">${_paperIcon()}<span>Add note...</span></div>
+        </div>
+        <div class="row-actions">
+          <button class="btn-sm-default dc-btn" onclick="toggleDC('cx-albuterol')">D/C</button>
+          <button class="btn-sm-default" onclick="openActionsMenu(event,'cx-albuterol')">Actions</button>
+        </div>
+      </div>
+      ${_dcOptions()}
+      <div class="nested-rows" id="nested-cx-albuterol"></div>
+    </div>
+    <div class="med-card ghost-row" id="card-ghost-amlodipine">
+      <div class="med-card-content">
+        <div class="chevron-wrap" style="visibility:hidden;"><div class="chevron"></div></div>
+        <div class="date-col">04/29/20</div>
+        <div class="med-info">
+          <div class="med-name">Amlodipine 5 mg <span class="badge badge-pending">Pending Sign Off</span></div>
+          <div class="med-sig">Take one tablet by mouth once daily</div>
+          <div class="med-annotation">Walgreens · Dr. M. Rivera</div>
+        </div>
+        <div class="row-actions" style="visibility:hidden;"></div>
+      </div>
+    </div>
+    <div class="med-card" id="card-cx-aspirin">
+      <div class="med-card-content">
+        <div class="chevron-wrap" onclick="toggleRow('cx-aspirin')"><div class="chevron" id="chev-cx-aspirin"></div>${_mergeCb()}</div>
+        <div class="date-col">03/05/20</div>
+        <div class="med-info">
+          <div class="med-name">Aspirin 81 mg Tab</div>
+          <div class="med-sig">Take one tablet by mouth once daily</div>
+          <div class="add-note-hint">${_paperIcon()}<span>Add note...</span></div>
+        </div>
+        <div class="row-actions">
+          <button class="btn-sm-default dc-btn" onclick="toggleDC('cx-aspirin')">D/C</button>
+          <button class="btn-sm-default" onclick="openActionsMenu(event,'cx-aspirin')">Actions</button>
+        </div>
+      </div>
+      ${_dcOptions()}
+      <div class="nested-rows" id="nested-cx-aspirin"></div>
+    </div>
+    <div class="med-card" id="card-cx-atorvastatin">
+      <div class="med-card-content">
+        <div class="chevron-wrap" onclick="toggleRow('cx-atorvastatin')"><div class="chevron open" id="chev-cx-atorvastatin"></div>${_mergeCb()}</div>
+        <div class="date-col">05/01/20</div>
+        <div class="med-info">
+          <div class="med-name">Atorvastatin 40 mg
+            <span class="badge badge-info auto-merged-badge" onclick="unmerge('cx-atorvastatin')">
+              <span class="merge-normal">Auto Merged</span>
+              <span class="merge-hover">Unmerge <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="opacity:0.4;flex-shrink:0;"><line x1="2" y1="2" x2="8" y2="8" stroke="#142125" stroke-width="1.4" stroke-linecap="round"/><line x1="8" y1="2" x2="2" y2="8" stroke="#142125" stroke-width="1.4" stroke-linecap="round"/></svg></span>
+            </span>
+          </div>
+          <div class="med-sig">Take one tablet by mouth once daily at bedtime</div>
+          <div class="med-ai-insight">Rx from 5/01/20 merged with fill data from 5/02/20</div>
+        </div>
+        <div class="row-actions">
+          <button class="btn-sm-default dc-btn" onclick="toggleDC('cx-atorvastatin')">D/C</button>
+          <button class="btn-sm-default" onclick="openActionsMenu(event,'cx-atorvastatin')">Actions</button>
+        </div>
+      </div>
+      ${_dcOptions()}
+      <div class="nested-rows open" id="nested-cx-atorvastatin">
+        <div class="nested-timeline-label"><span>Timeline</span></div>
+        <div class="nested-row">
+          <div style="width:20px;flex-shrink:0;opacity:0;"></div>
+          <div class="nested-date">05/02/20</div>
+          <div class="nested-med">
+            <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;"><span class="badge badge-neutral">Doc'd New</span><span class="nested-med-name"><strong>Atorvastatin 40 mg</strong>: Take one tablet daily at bedtime</span></div>
+          </div>
+        </div>
+        <div class="nested-row" style="padding-bottom:4px;">
+          <div style="width:20px;flex-shrink:0;opacity:0;"></div>
+          <div class="nested-date">05/01/20</div>
+          <div class="nested-med">
+            <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;"><span class="badge badge-neutral">New Rx</span><span class="nested-med-name"><strong>Atorvastatin 40 mg</strong>: Take one tablet daily at bedtime</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="med-card" id="card-cx-clopidogrel">
+      <div class="med-card-content">
+        <div class="chevron-wrap" onclick="toggleRow('cx-clopidogrel')"><div class="chevron" id="chev-cx-clopidogrel"></div>${_mergeCb()}</div>
+        <div class="date-col">07/20/19</div>
+        <div class="med-info">
+          <div class="med-name">Clopidogrel 75 mg Tab <span class="badge badge-info" id="badge-lnt-cx-clopidogrel">Flagged for Review</span></div>
+          <div class="med-sig">Take one tablet by mouth once daily</div>
+          <div class="med-ai-insight">Pt has not refilled this med since 07/20/19.</div>
+        </div>
+        <div class="row-actions">
+          <button class="btn-sm-default dc-btn" onclick="toggleDC('cx-clopidogrel')">D/C</button>
+          <button class="btn-sm-default" onclick="openActionsMenu(event,'cx-clopidogrel')">Actions</button>
+        </div>
+      </div>
+      ${_dcOptions()}
+      <div class="nested-rows" id="nested-cx-clopidogrel"></div>
+    </div>
+    <div class="med-card" id="card-cx-glipizide">
+      <div class="med-card-content">
+        <div class="chevron-wrap" onclick="toggleRow('cx-glipizide')"><div class="chevron" id="chev-cx-glipizide"></div>${_mergeCb()}</div>
+        <div class="date-col">08/15/19</div>
+        <div class="med-info">
+          <div class="med-name">Glipizide 5 mg Tab <span class="badge badge-info" id="badge-lnt-cx-glipizide">Flagged for Review</span></div>
+          <div class="med-sig">Take one tablet by mouth twice daily before meals</div>
+          <div class="med-ai-insight">Pt has not refilled this med since 08/15/19.</div>
+        </div>
+        <div class="row-actions">
+          <button class="btn-sm-default dc-btn" onclick="toggleDC('cx-glipizide')">D/C</button>
+          <button class="btn-sm-default" onclick="openActionsMenu(event,'cx-glipizide')">Actions</button>
+        </div>
+      </div>
+      ${_dcOptions()}
+      <div class="nested-rows" id="nested-cx-glipizide"></div>
+    </div>
+    <div class="med-card" id="card-cx-hctz">
+      <div class="med-card-content">
+        <div class="chevron-wrap" onclick="toggleRow('cx-hctz')"><div class="chevron" id="chev-cx-hctz"></div>${_mergeCb()}</div>
+        <div class="date-col">09/10/19</div>
+        <div class="med-info">
+          <div class="med-name">Hydrochlorothiazide 25 mg Tab <span class="badge badge-info" id="badge-lnt-cx-hctz">Flagged for Review</span></div>
+          <div class="med-sig">Take one tablet by mouth once daily in the morning</div>
+          <div class="med-ai-insight">Pt has not refilled this med since 09/10/19.</div>
+        </div>
+        <div class="row-actions">
+          <button class="btn-sm-default dc-btn" onclick="toggleDC('cx-hctz')">D/C</button>
+          <button class="btn-sm-default" onclick="openActionsMenu(event,'cx-hctz')">Actions</button>
+        </div>
+      </div>
+      ${_dcOptions()}
+      <div class="nested-rows" id="nested-cx-hctz"></div>
+    </div>
+    <div class="med-card ghost-row" id="card-ghost-jardiance">
+      <div class="med-card-content">
+        <div class="chevron-wrap" style="visibility:hidden;"><div class="chevron"></div></div>
+        <div class="date-col">05/03/20</div>
+        <div class="med-info">
+          <div class="med-name">Jardiance 10 mg <span class="badge badge-pending">Pending Sign Off</span></div>
+          <div class="med-sig">Take one tablet by mouth once daily</div>
+          <div class="med-annotation">CVS Pharmacy · Dr. T. Nguyen</div>
+        </div>
+        <div class="row-actions" style="visibility:hidden;"></div>
+      </div>
+    </div>
+    <div class="med-card" id="card-cx-levothyroxine">
+      <div class="med-card-content">
+        <div class="chevron-wrap" onclick="toggleRow('cx-levothyroxine')"><div class="chevron open" id="chev-cx-levothyroxine"></div>${_mergeCb()}</div>
+        <div class="date-col">04/25/20</div>
+        <div class="med-info">
+          <div class="med-name">Levothyroxine 75 mcg Tab
+            <span class="badge badge-info auto-merged-badge" onclick="unmerge('cx-levothyroxine')">
+              <span class="merge-normal">Auto Merged</span>
+              <span class="merge-hover">Unmerge <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="opacity:0.4;flex-shrink:0;"><line x1="2" y1="2" x2="8" y2="8" stroke="#142125" stroke-width="1.4" stroke-linecap="round"/><line x1="8" y1="2" x2="2" y2="8" stroke="#142125" stroke-width="1.4" stroke-linecap="round"/></svg></span>
+            </span>
+          </div>
+          <div class="med-sig">Take one tablet by mouth once daily in the morning</div>
+          <div class="med-ai-insight">Rx from 4/25/20 merged with fill data from 4/26/20</div>
+        </div>
+        <div class="row-actions">
+          <button class="btn-sm-default dc-btn" onclick="toggleDC('cx-levothyroxine')">D/C</button>
+          <button class="btn-sm-default" onclick="openActionsMenu(event,'cx-levothyroxine')">Actions</button>
+        </div>
+      </div>
+      ${_dcOptions()}
+      <div class="nested-rows open" id="nested-cx-levothyroxine">
+        <div class="nested-timeline-label"><span>Timeline</span></div>
+        <div class="nested-row">
+          <div style="width:20px;flex-shrink:0;opacity:0;"></div>
+          <div class="nested-date">04/26/20</div>
+          <div class="nested-med">
+            <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;"><span class="badge badge-neutral">Doc'd New</span><span class="nested-med-name"><strong>Levothyroxine 75 mcg</strong>: Take one tablet daily (morning)</span></div>
+          </div>
+        </div>
+        <div class="nested-row" style="padding-bottom:4px;">
+          <div style="width:20px;flex-shrink:0;opacity:0;"></div>
+          <div class="nested-date">04/25/20</div>
+          <div class="nested-med">
+            <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;"><span class="badge badge-neutral">New Rx</span><span class="nested-med-name"><strong>Levothyroxine 75 mcg</strong>: Take one tablet daily (morning)</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="med-card" id="card-cx-lisinopril">
+      <div class="med-card-content">
+        <div class="chevron-wrap" onclick="toggleRow('cx-lisinopril')"><div class="chevron open" id="chev-cx-lisinopril"></div>${_mergeCb()}</div>
+        <div class="date-col">02/20/20</div>
+        <div class="med-info">
+          <div class="med-name">Lisinopril 10 mg</div>
+          <div class="med-sig">Take one tablet by mouth once daily</div>
+          <div class="med-annotation" id="ann-fill-existing-cx-lisinopril">Filled at 20 mg on 04/30/20 — review needed</div>
+        </div>
+        <div class="row-actions">
+          <button class="btn-sm-default dc-btn" onclick="toggleDC('cx-lisinopril')">D/C</button>
+          <button class="btn-sm-default" onclick="openActionsMenu(event,'cx-lisinopril')">Actions</button>
+        </div>
+      </div>
+      ${_dcOptions()}
+      <div class="nested-rows open" id="nested-cx-lisinopril">
+        <div class="nested-timeline-label"><span>Fills</span></div>
+        <div class="nested-row" style="padding-bottom:4px;">
+          <div style="width:20px;flex-shrink:0;opacity:0;"></div>
+          <div class="nested-date">04/30/20</div>
+          <div class="nested-med">
+            <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;"><span class="badge badge-fill">Fill</span><span class="nested-med-name"><strong>Lisinopril 20 mg</strong> · 1 tab daily</span><span class="badge badge-pending">Pending Sign Off</span></div>
+            <div class="nested-med-sig" style="color:rgba(0,24,38,0.45);">CVS Pharmacy · Dr. T. Nguyen</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="med-card" id="card-cx-metformin">
+      <div class="med-card-content">
+        <div class="chevron-wrap" onclick="toggleRow('cx-metformin')"><div class="chevron open" id="chev-cx-metformin"></div>${_mergeCb()}</div>
+        <div class="date-col">03/12/20</div>
+        <div class="med-info">
+          <div class="med-name">Metformin ER 500 mg</div>
+          <div class="med-sig">Take one tablet by mouth twice daily with meals</div>
+          <div class="med-annotation" id="ann-fill-existing-cx-metformin">Filled at 1000 mg on 04/18/20 — review needed</div>
+        </div>
+        <div class="row-actions">
+          <button class="btn-sm-default dc-btn" onclick="toggleDC('cx-metformin')">D/C</button>
+          <button class="btn-sm-default" onclick="openActionsMenu(event,'cx-metformin')">Actions</button>
+        </div>
+      </div>
+      ${_dcOptions()}
+      <div class="nested-rows open" id="nested-cx-metformin">
+        <div class="nested-timeline-label"><span>Fills</span></div>
+        <div class="nested-row" style="padding-bottom:4px;">
+          <div style="width:20px;flex-shrink:0;opacity:0;"></div>
+          <div class="nested-date">04/18/20</div>
+          <div class="nested-med">
+            <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;"><span class="badge badge-fill">Fill</span><span class="nested-med-name"><strong>Metformin ER 1000 mg</strong> · 1 tab twice daily</span><span class="badge badge-pending">Pending Sign Off</span></div>
+            <div class="nested-med-sig" style="color:rgba(0,24,38,0.45);">Walgreens · Dr. M. Rivera</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="med-card" id="card-cx-metoprolol">
+      <div class="med-card-content">
+        <div class="chevron-wrap" onclick="toggleRow('cx-metoprolol')"><div class="chevron" id="chev-cx-metoprolol"></div>${_mergeCb()}</div>
+        <div class="date-col">05/01/20</div>
+        <div class="med-info">
+          <div class="med-name">Metoprolol Tartrate 50 mg <span class="badge" id="badge-dup-cx-metoprolol" style="background:#dbebff;color:#07479d;">Possible Duplicate</span></div>
+          <div class="med-sig">Take one tablet by mouth twice daily</div>
+          <div class="add-note-hint">${_paperIcon()}<span>Add note...</span></div>
+        </div>
+        <div class="row-actions">
+          <button class="btn-sm-default dc-btn" onclick="toggleDC('cx-metoprolol')">D/C</button>
+          <button class="btn-sm-default" onclick="openActionsMenu(event,'cx-metoprolol')">Actions</button>
+        </div>
+      </div>
+      ${_dcOptions()}
+      <div class="nested-rows" id="nested-cx-metoprolol"></div>
+    </div>
+    <div class="med-card ghost-row" id="card-ghost-pantoprazole">
+      <div class="med-card-content">
+        <div class="chevron-wrap" style="visibility:hidden;"><div class="chevron"></div></div>
+        <div class="date-col">04/22/20</div>
+        <div class="med-info">
+          <div class="med-name">Pantoprazole 40 mg <span class="badge badge-pending">Pending Sign Off</span></div>
+          <div class="med-sig">Take one tablet by mouth once daily before a meal</div>
+          <div class="med-annotation">CVS Pharmacy · Dr. L. Park</div>
+        </div>
+        <div class="row-actions" style="visibility:hidden;"></div>
+      </div>
+    </div>
+    <div class="med-card" id="card-cx-ranitidine">
+      <div class="med-card-content">
+        <div class="chevron-wrap" onclick="toggleRow('cx-ranitidine')"><div class="chevron" id="chev-cx-ranitidine"></div>${_mergeCb()}</div>
+        <div class="date-col">04/10/20</div>
+        <div class="med-info">
+          <div class="med-name">Ranitidine 150 mg Tab <span class="badge" id="badge-dup-cx-ranitidine" style="background:#dbebff;color:#07479d;">Possible Duplicate</span></div>
+          <div class="med-sig">Take one tablet by mouth twice daily</div>
+          <div class="add-note-hint">${_paperIcon()}<span>Add note...</span></div>
+        </div>
+        <div class="row-actions">
+          <button class="btn-sm-default dc-btn" onclick="toggleDC('cx-ranitidine')">D/C</button>
+          <button class="btn-sm-default" onclick="openActionsMenu(event,'cx-ranitidine')">Actions</button>
+        </div>
+      </div>
+      ${_dcOptions()}
+      <div class="nested-rows" id="nested-cx-ranitidine"></div>
+    </div>
+    <div class="med-card ghost-row" id="card-ghost-spironolactone">
+      <div class="med-card-content">
+        <div class="chevron-wrap" style="visibility:hidden;"><div class="chevron"></div></div>
+        <div class="date-col">04/12/20</div>
+        <div class="med-info">
+          <div class="med-name">Spironolactone 25 mg <span class="badge badge-pending">Pending Sign Off</span></div>
+          <div class="med-sig">Take one tablet by mouth once daily</div>
+          <div class="med-annotation">Walgreens · Dr. M. Rivera</div>
+        </div>
+        <div class="row-actions" style="visibility:hidden;"></div>
+      </div>
+    </div>
+    <div class="med-card" id="card-cx-warfarin" style="border-bottom:none;">
+      <div class="med-card-content">
+        <div class="chevron-wrap" onclick="toggleRow('cx-warfarin')"><div class="chevron" id="chev-cx-warfarin"></div>${_mergeCb()}</div>
+        <div class="date-col">06/03/19</div>
+        <div class="med-info">
+          <div class="med-name">Warfarin 5 mg Tab <span class="badge badge-info" id="badge-lnt-cx-warfarin">Flagged for Review</span></div>
+          <div class="med-sig">Take one tablet by mouth once daily</div>
+          <div class="med-ai-insight">Pt has not refilled this med since 06/03/19.</div>
+        </div>
+        <div class="row-actions">
+          <button class="btn-sm-default dc-btn" onclick="toggleDC('cx-warfarin')">D/C</button>
+          <button class="btn-sm-default" onclick="openActionsMenu(event,'cx-warfarin')">Actions</button>
+        </div>
+      </div>
+      ${_dcOptions()}
+      <div class="nested-rows" id="nested-cx-warfarin"></div>
+    </div>`; }
+
+  function loadComplexScenario() {
+    _swapDOM(_complexSidebarHTML(), _complexMedBodyHTML());
+    changelog.splice(0, changelog.length, ...JSON.parse(JSON.stringify(_complexChangelog)));
+    Object.keys(MED_ROW_MAP).forEach(k => delete MED_ROW_MAP[k]);
+    Object.assign(MED_ROW_MAP, _complexMedRowMap);
+    Object.keys(GHOST_INSERT_ANCHORS).forEach(k => delete GHOST_INSERT_ANCHORS[k]);
+    Object.assign(GHOST_INSERT_ANCHORS, _complexGhostAnchors);
+    _protoEmpty = false;
+    document.getElementById('sidebar-empty-msg').style.display = 'none';
+    document.querySelector('.sidebar-ft').style.display = '';
+    const subtitle = document.querySelector('.sidebar-hd .sidebar-subtitle');
+    if (subtitle) subtitle.textContent = 'Since last reconciliation · 04/15/20';
+    _resetScenarioUI('fill-jardiance');
+  }
+
   /* ── Med list sorting ── */
   let _sortCol = null, _sortDir = 'asc';
+  let _protoEmpty = false;
 
   function parseMedDate(str) {
     if (!str) return 0;
@@ -2049,35 +2608,40 @@
     });
   }
 
-  /* ── Init ── */
-  selectItem(activeItemId);
-  updateCounts();
-  updateFooterStatus();
-
   /* ── Click on right-panel card → select matching left sidebar item ── */
-  document.querySelector('.modal-body').addEventListener('click', e => {
+  function _medCardClickHandler(e) {
     if (e.target.closest('button, input, label, .chevron-wrap')) return;
     const card = e.target.closest('.med-card');
     if (!card) return;
     for (const [itemId, cardIds] of Object.entries(MED_ROW_MAP)) {
       if (cardIds.includes(card.id)) { selectItem(itemId); return; }
     }
-  });
+  }
 
   /* ── Info tip tooltip (fixed-position to escape overflow:hidden on sidebar) ── */
   const tipPopup = document.createElement('div');
   tipPopup.id = 'sc-tip-popup';
   document.body.appendChild(tipPopup);
-  document.querySelectorAll('.sc-info-tip').forEach(el => {
-    el.addEventListener('mouseenter', () => {
-      const rect = el.getBoundingClientRect();
-      tipPopup.textContent = el.getAttribute('data-tip');
-      tipPopup.style.left = rect.left + 'px';
-      tipPopup.style.top = (rect.bottom + 6) + 'px';
-      tipPopup.style.display = 'block';
+
+  function _attachTooltips() {
+    document.querySelectorAll('.sc-info-tip').forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        const rect = el.getBoundingClientRect();
+        tipPopup.textContent = el.getAttribute('data-tip');
+        tipPopup.style.left = rect.left + 'px';
+        tipPopup.style.top = (rect.bottom + 6) + 'px';
+        tipPopup.style.display = 'block';
+      });
+      el.addEventListener('mouseleave', () => { tipPopup.style.display = 'none'; });
     });
-    el.addEventListener('mouseleave', () => { tipPopup.style.display = 'none'; });
-  });
+  }
+
+  /* ── Init ── */
+  selectItem(activeItemId);
+  updateCounts();
+  updateFooterStatus();
+  document.querySelector('.modal-body').addEventListener('click', _medCardClickHandler);
+  _attachTooltips();
 </script>
 
 </body>
